@@ -249,14 +249,24 @@ def fetch_usage_data(access_token: str = None, refresh_token: str = None) -> dic
 
                 tier_desc = paid_tier.get("upgradeSubscriptionText") or paid_tier.get("description") or current_tier.get("description") or ""
 
-                upgrade_uri = current_tier.get("upgradeSubscriptionUri", "")
-                
-                # Extract email if present
+                # Robust Email extraction: first from signed OIDC id_token in Keychain, fallback to URL regex
                 email = None
-                if "Email=" in upgrade_uri:
-                    m = re.search(r"[?&]Email=([^&]+)", upgrade_uri)
-                    if m:
-                        email = urllib.parse.unquote(m.group(1))
+                id_token = cred.get("id_token") or token_info.get("id_token")
+                if id_token and isinstance(id_token, str) and "." in id_token:
+                    try:
+                        p = id_token.split(".")[1]
+                        p += "=" * (-len(p) % 4)
+                        claims = json.loads(base64.b64decode(p).decode("utf-8"))
+                        email = claims.get("email")
+                    except Exception:
+                        pass
+
+                if not email:
+                    upgrade_uri = current_tier.get("upgradeSubscriptionUri", "")
+                    if "Email=" in upgrade_uri:
+                        m = re.search(r"[?&]Email=([^&]+)", upgrade_uri)
+                        if m:
+                            email = urllib.parse.unquote(m.group(1))
 
                 # 2. Retrieve User Quota Summary
                 quota_resp = make_cloud_code_request(
