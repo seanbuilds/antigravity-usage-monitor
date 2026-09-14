@@ -244,15 +244,38 @@ struct CustomProgressBar: View {
         return Color(red: 0.19, green: 0.82, blue: 0.35) // green
     }
 
+    var gradient: LinearGradient {
+        if fraction < 0.20 {
+            return LinearGradient(
+                colors: [Color(red: 1.0, green: 0.35, blue: 0.28), Color(red: 0.95, green: 0.16, blue: 0.16)],
+                startPoint: .leading,
+                endPoint: .trailing
+            )
+        } else if fraction < 0.50 {
+            return LinearGradient(
+                colors: [Color(red: 1.0, green: 0.88, blue: 0.20), Color(red: 0.98, green: 0.70, blue: 0.05)],
+                startPoint: .leading,
+                endPoint: .trailing
+            )
+        } else {
+            return LinearGradient(
+                colors: [Color(red: 0.25, green: 0.90, blue: 0.50), Color(red: 0.12, green: 0.78, blue: 0.35)],
+                startPoint: .leading,
+                endPoint: .trailing
+            )
+        }
+    }
+
     var body: some View {
         GeometryReader { geo in
             ZStack(alignment: .leading) {
                 Capsule()
-                    .fill(Color.white.opacity(0.12))
+                    .fill(Color.white.opacity(0.08))
                 Capsule()
-                    .fill(color)
+                    .fill(gradient)
                     .frame(width: max(0, min(geo.size.width, geo.size.width * CGFloat(fraction))))
-                    .animation(.spring(response: 0.4, dampingFraction: 0.8), value: fraction)
+                    .shadow(color: color.opacity(0.30), radius: 3, x: 0, y: 1)
+                    .animation(.spring(response: 0.45, dampingFraction: 0.82), value: fraction)
             }
         }
         .frame(height: height)
@@ -528,7 +551,7 @@ struct RemoteDeviceBar: View {
     @ObservedObject var appState: AppState
 
     var cmd: String {
-        appState.quota?.remoteCommand ?? "curl -s http://192.168.5.67:3007"
+        appState.quota?.remoteCommand ?? "curl -s http://127.0.0.1:3007"
     }
 
     var body: some View {
