@@ -212,18 +212,13 @@ class AppState: ObservableObject {
         let gWkPct = Int(round((b.geminiWeeklyFraction ?? 1.0) * 100))
         let cWkPct = Int(round((b.claudeWeeklyFraction ?? 1.0) * 100))
 
-        // Find earliest 5-hour rolling smoothing reset timer
-        var resetSuffix = ""
-        let valid5hTimers = [b.gemini5hResetsIn, b.claude5hResetsIn].compactMap { $0 }.filter { $0 > 0 }
-        if let earliest5h = valid5hTimers.min() {
-            let shortT = formatShortTimer(seconds: earliest5h)
-            if !shortT.isEmpty {
-                resetSuffix = " (\(shortT))"
-            }
-        }
+        let gTimer = formatShortTimer(seconds: b.gemini5hResetsIn)
+        let cTimer = formatShortTimer(seconds: b.claude5hResetsIn)
+        let gTimerPart = gTimer.isEmpty ? "" : " (\(gTimer))"
+        let cTimerPart = cTimer.isEmpty ? "" : " (\(cTimer))"
 
-        // Option A: Clean dual status indicator in Menu Bar with live reset timer
-        let title = "✦ G: \(g5hPct)% · C: \(c5hPct)%\(resetSuffix)"
+        // Display both models and their live countdown timers directly in Menu Bar
+        let title = "✦ G: \(g5hPct)%\(gTimerPart) · C: \(c5hPct)%\(cTimerPart)"
 
         let g5hTime = formatRelativeTime(seconds: b.gemini5hResetsIn)
         let gWkTime = formatRelativeTime(seconds: b.geminiWeeklyResetsIn)
@@ -488,43 +483,50 @@ struct RateLimitBoxView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            HStack {
-                HStack(spacing: 4) {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .center) {
+                HStack(spacing: 5) {
                     Image(systemName: iconName)
-                        .font(.system(size: 9))
-                        .foregroundStyle(Color.white.opacity(0.55))
+                        .font(.system(size: 9.5))
+                        .foregroundStyle(Color.white.opacity(0.60))
                     Text(windowTitle)
-                        .font(.system(size: 10.5, weight: .medium))
-                        .foregroundStyle(Color.white.opacity(0.70))
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(Color.white.opacity(0.85))
                 }
 
                 Spacer()
 
-                Text(pctText)
-                    .font(.system(size: 13, weight: .bold, design: .rounded))
-                    .foregroundStyle(color)
+                HStack(spacing: 6) {
+                    // Live Countdown Timer Badge
+                    Text(formatRelativeTime(seconds: resetSeconds))
+                        .font(.system(size: 10, weight: .bold, design: .rounded))
+                        .foregroundStyle(Color(red: 0.38, green: 0.72, blue: 1.0))
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(
+                            Capsule()
+                                .fill(Color(red: 0.04, green: 0.52, blue: 1.0).opacity(0.18))
+                                .overlay(
+                                    Capsule()
+                                        .strokeBorder(Color(red: 0.04, green: 0.52, blue: 1.0).opacity(0.30), lineWidth: 0.8)
+                                )
+                        )
+
+                    Text(pctText)
+                        .font(.system(size: 13.5, weight: .heavy, design: .rounded))
+                        .foregroundStyle(color)
+                }
             }
 
             CustomProgressBar(fraction: fraction, height: 4)
-
-            HStack {
-                Text(formatRelativeTime(seconds: resetSeconds))
-                    .font(.system(size: 9.5, weight: .regular))
-                    .foregroundStyle(Color.white.opacity(0.40))
-                Spacer()
-                Text("\(Int(round(fraction * 100)))% available")
-                    .font(.system(size: 8.5, weight: .regular))
-                    .foregroundStyle(Color.white.opacity(0.35))
-            }
         }
-        .padding(9)
+        .padding(10)
         .background(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .fill(Color.white.opacity(0.04))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .strokeBorder(Color.white.opacity(0.06), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .strokeBorder(Color.white.opacity(0.07), lineWidth: 1)
                 )
         )
     }

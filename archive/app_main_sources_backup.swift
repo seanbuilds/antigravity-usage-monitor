@@ -1,6 +1,7 @@
-// v9 – 100% Pure Native SwiftUI & AppKit macOS Menu Bar Application
-//      Crisp Obsidian Palette, Zero Double-Blur / Zero Opaque Artifacts,
-//      Complete Sibling Parity with Native Quota Tracker, Dynamic Sizing & Instant Quit.
+// v12 – 100% Pure Native SwiftUI & AppKit macOS Menu Bar Application
+//       Multi-Monitor Popover Anchor & Secondary Display Coordinate Geometry Fix,
+//       Live 1-Second Decrement Countdown Timer in Menu Bar Title and
+//       High-Contrast Electric-Blue Pill Badges on All Rate-Limit Cards.
 import Cocoa
 import SwiftUI
 import WidgetKit
@@ -47,19 +48,116 @@ public struct QuotaData: Codable, Sendable {
     public let groups: [QuotaGroup]?
 }
 
+public struct QuotaBreakdown: Sendable {
+    public var gemini5hFraction: Double?
+    public var gemini5hResetsIn: Int?
+    public var gemini5hResetDate: Date?
+    public var geminiWeeklyFraction: Double?
+    public var geminiWeeklyResetsIn: Int?
+    public var geminiWeeklyResetDate: Date?
+
+    public var claude5hFraction: Double?
+    public var claude5hResetsIn: Int?
+    public var claude5hResetDate: Date?
+    public var claudeWeeklyFraction: Double?
+    public var claudeWeeklyResetsIn: Int?
+    public var claudeWeeklyResetDate: Date?
+
+    public init() {}
+}
+
 // MARK: - Formatters & Helpers
+
+func parseResetTargetDate(resetsInSeconds: Int?, resetTime: String?, resetAt: String?) -> (Int?, Date?) {
+    let rawTime = (resetTime?.isEmpty == false) ? resetTime : resetAt
+    if let timeStr = rawTime, !timeStr.isEmpty {
+        let isoWithFrac = ISO8601DateFormatter()
+        isoWithFrac.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let d = isoWithFrac.date(from: timeStr) {
+            let diff = max(0, Int(d.timeIntervalSinceNow))
+            return (diff, d)
+        }
+        let isoStandard = ISO8601DateFormatter()
+        isoStandard.formatOptions = [.withInternetDateTime]
+        if let d = isoStandard.date(from: timeStr) {
+            let diff = max(0, Int(d.timeIntervalSinceNow))
+            return (diff, d)
+        }
+    }
+    if let s = resetsInSeconds, s > 0 {
+        let d = Date().addingTimeInterval(Double(s))
+        return (s, d)
+    }
+    return (nil, nil)
+}
 
 func formatRelativeTime(seconds: Int?) -> String {
     guard let s = seconds, s > 0 else { return "Ready" }
-    if s < 60 { return "\(s)s left" }
+    if s < 60 { return "resets in \(s)s" }
     let days = s / 86400
     let hours = (s % 86400) / 3600
     let mins = (s % 3600) / 60
     var parts: [String] = []
     if days > 0 { parts.append("\(days)d") }
     if hours > 0 || days > 0 { parts.append("\(hours)h") }
-    parts.append("\(mins)m")
-    return parts.prefix(2).joined(separator: " ") + " left"
+    if mins > 0 || parts.isEmpty { parts.append("\(mins)m") }
+    return "resets in " + parts.prefix(2).joined(separator: " ")
+}
+
+func formatShortTimer(seconds: Int?) -> String {
+    guard let s = seconds, s > 0 else { return "" }
+    let days = s / 86400
+    let hours = (s % 86400) / 3600
+    let mins = (s % 3600) / 60
+    if days > 0 { return "\(days)d \(hours)h" }
+    if hours > 0 { return "\(hours)h \(mins)m" }
+    if mins > 0 { return "\(mins)m" }
+    return "\(s)s"
+}
+
+func extractBreakdown(from quota: QuotaData?) -> QuotaBreakdown {
+    var b = QuotaBreakdown()
+    guard let quota = quota else { return b }
+
+    for grp in quota.groups ?? [] {
+        let name = (grp.displayName ?? grp.name ?? "").lowercased()
+        let isGemini = name.contains("gemini")
+
+        for bucket in grp.buckets ?? [] {
+            let bId = (bucket.bucketId ?? bucket.displayName ?? bucket.window ?? "").lowercased()
+            let frac = bucket.remainingFraction
+            let (secs, targetDate) = parseResetTargetDate(
+                resetsInSeconds: bucket.resetsInSeconds,
+                resetTime: bucket.resetTime,
+                resetAt: bucket.resetAt
+            )
+            let is5h = bId.contains("5h") || bId.contains("five hour") || bucket.window == "5h"
+            let isWeekly = bId.contains("week") || bucket.window == "weekly"
+
+            if isGemini {
+                if is5h {
+                    b.gemini5hFraction = frac
+                    b.gemini5hResetsIn = secs
+                    b.gemini5hResetDate = targetDate
+                } else if isWeekly {
+                    b.geminiWeeklyFraction = frac
+                    b.geminiWeeklyResetsIn = secs
+                    b.geminiWeeklyResetDate = targetDate
+                }
+            } else {
+                if is5h {
+                    b.claude5hFraction = frac
+                    b.claude5hResetsIn = secs
+                    b.claude5hResetDate = targetDate
+                } else if isWeekly {
+                    b.claudeWeeklyFraction = frac
+                    b.claudeWeeklyResetsIn = secs
+                    b.claudeWeeklyResetDate = targetDate
+                }
+            }
+        }
+    }
+    return b
 }
 
 public enum ScreenMode: Hashable {
@@ -72,6 +170,7 @@ public enum ScreenMode: Hashable {
 @MainActor
 class AppState: ObservableObject {
     @Published var quota: QuotaData?
+    @Published var breakdown: QuotaBreakdown = QuotaBreakdown()
     @Published var isLoading: Bool = false
     @Published var isOffline: Bool = false
     @Published var errorMessage: String?
@@ -79,6 +178,8 @@ class AppState: ObservableObject {
     @Published var isUnsnapped: Bool = false
     @Published var isWidgetVisible: Bool = false
     @Published var isWidgetHovering: Bool = false
+    @Published var isManualRefreshing: Bool = false
+    @Published var refreshRotation: Double = 0
     @Published var copiedRemoteCommand: Bool = false
 
     var onToggleUnsnap: (() -> Void)?
@@ -86,6 +187,67 @@ class AppState: ObservableObject {
     var onCloseWidget: (() -> Void)?
     var onOpenFullApp: (() -> Void)?
     var onUpdateStatusTitle: ((String, String) -> Void)?
+
+    private var countdownTimer: Timer?
+
+    func startCountdownTimer() {
+        guard countdownTimer == nil else { return }
+        let timer = Timer(timeInterval: 1.0, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                self?.tickCountdown()
+            }
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        countdownTimer = timer
+    }
+
+    func tickCountdown() {
+        guard quota != nil, !isOffline else { return }
+
+        var changed = false
+
+        if let d = breakdown.gemini5hResetDate {
+            let s = max(0, Int(d.timeIntervalSinceNow))
+            if s != breakdown.gemini5hResetsIn {
+                breakdown.gemini5hResetsIn = s
+                changed = true
+            }
+        }
+        if let d = breakdown.geminiWeeklyResetDate {
+            let s = max(0, Int(d.timeIntervalSinceNow))
+            if s != breakdown.geminiWeeklyResetsIn {
+                breakdown.geminiWeeklyResetsIn = s
+                changed = true
+            }
+        }
+        if let d = breakdown.claude5hResetDate {
+            let s = max(0, Int(d.timeIntervalSinceNow))
+            if s != breakdown.claude5hResetsIn {
+                breakdown.claude5hResetsIn = s
+                changed = true
+            }
+        }
+        if let d = breakdown.claudeWeeklyResetDate {
+            let s = max(0, Int(d.timeIntervalSinceNow))
+            if s != breakdown.claudeWeeklyResetsIn {
+                breakdown.claudeWeeklyResetsIn = s
+                changed = true
+            }
+        }
+
+        if changed {
+            updateStatusTitle()
+        }
+
+        // Auto-refresh from daemon if any active limit countdown reaches zero
+        let gHitZero = (breakdown.gemini5hResetsIn == 0 && (breakdown.gemini5hFraction ?? 1.0) < 1.0)
+        let cHitZero = (breakdown.claude5hResetsIn == 0 && (breakdown.claude5hFraction ?? 1.0) < 1.0)
+        if gHitZero || cHitZero {
+            if !isLoading && !isManualRefreshing {
+                fetchQuota(force: true)
+            }
+        }
+    }
 
     func fetchQuota(force: Bool = false) {
         isLoading = true
@@ -97,11 +259,12 @@ class AppState: ObservableObject {
                 let (data, _) = try await URLSession.shared.data(from: url)
                 let decoded = try JSONDecoder().decode(QuotaData.self, from: data)
                 self.quota = decoded
+                self.breakdown = extractBreakdown(from: decoded)
                 self.isOffline = false
                 self.errorMessage = nil
                 self.isLoading = false
                 self.syncToAppGroup(decoded)
-                self.updateStatusTitle(with: decoded)
+                self.updateStatusTitle()
             } catch {
                 self.isOffline = true
                 self.errorMessage = error.localizedDescription
@@ -111,35 +274,58 @@ class AppState: ObservableObject {
         }
     }
 
-    func computeDisplayPercent(for quota: QuotaData) -> Int {
-        var minFraction = 1.0
-        var primaryFraction: Double?
-
-        for grp in quota.groups ?? [] {
-            let isGemini = (grp.displayName ?? grp.name ?? "").lowercased().contains("gemini")
-            for b in grp.buckets ?? [] {
-                if let frac = b.remainingFraction {
-                    minFraction = min(minFraction, frac)
-                    if isGemini && (b.window == "5h" || (b.displayName ?? "").contains("Five Hour")) {
-                        primaryFraction = frac
-                    }
-                }
-            }
+    func triggerManualRefresh() {
+        guard !isManualRefreshing else { return }
+        isManualRefreshing = true
+        withAnimation(.easeInOut(duration: 0.6)) {
+            refreshRotation += 360
         }
-        let effective = primaryFraction ?? minFraction
-        return Int(round(effective * 100))
+        fetchQuota(force: true)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.65) { [weak self] in
+            self?.isManualRefreshing = false
+        }
     }
 
-    func updateStatusTitle(with quota: QuotaData) {
-        let pct = computeDisplayPercent(for: quota)
-        let tierName = quota.tier ?? "Google AI Ultra"
-        onUpdateStatusTitle?("✦ \(pct)%", "Antigravity Quota (\(tierName)): \(pct)% primary capacity")
+    func updateStatusTitle() {
+        guard let quota = self.quota else {
+            onUpdateStatusTitle?("✦ G: --% · C: --%", "Antigravity Quota (Click to open dashboard)")
+            return
+        }
+        let b = self.breakdown
+        let g5hPct = Int(round((b.gemini5hFraction ?? 1.0) * 100))
+        let c5hPct = Int(round((b.claude5hFraction ?? 1.0) * 100))
+        let gWkPct = Int(round((b.geminiWeeklyFraction ?? 1.0) * 100))
+        let cWkPct = Int(round((b.claudeWeeklyFraction ?? 1.0) * 100))
+
+        let gTimer = formatShortTimer(seconds: b.gemini5hResetsIn)
+        let cTimer = formatShortTimer(seconds: b.claude5hResetsIn)
+        let gTimerPart = gTimer.isEmpty ? "" : " (\(gTimer))"
+        let cTimerPart = cTimer.isEmpty ? "" : " (\(cTimer))"
+
+        // Display both models and their live countdown timers directly in Menu Bar
+        let title = "✦ G: \(g5hPct)%\(gTimerPart) · C: \(c5hPct)%\(cTimerPart)"
+
+        let g5hTime = formatRelativeTime(seconds: b.gemini5hResetsIn)
+        let gWkTime = formatRelativeTime(seconds: b.geminiWeeklyResetsIn)
+        let c5hTime = formatRelativeTime(seconds: b.claude5hResetsIn)
+        let cWkTime = formatRelativeTime(seconds: b.claudeWeeklyResetsIn)
+
+        let tooltip = """
+        Antigravity Quotas (\(quota.tier ?? "Google AI Ultra")):
+        • Gemini 5-Hour: \(g5hPct)% (\(g5hTime))
+        • Gemini Weekly: \(gWkPct)% (\(gWkTime))
+        • Claude/GPT 5-Hour: \(c5hPct)% (\(c5hTime))
+        • Claude/GPT Weekly: \(cWkPct)% (\(cWkTime))
+        (Click to open dashboard)
+        """
+        onUpdateStatusTitle?(title, tooltip)
     }
 
     func syncToAppGroup(_ quota: QuotaData) {
-        let pct = computeDisplayPercent(for: quota)
+        let b = extractBreakdown(from: quota)
+        let minPct = Int(round(min(b.gemini5hFraction ?? 1.0, b.claude5hFraction ?? 1.0) * 100))
         if let defaults = UserDefaults(suiteName: "group.com.dad.aiusage") {
-            defaults.set(pct, forKey: "antigravity.quotaPercent")
+            defaults.set(minPct, forKey: "antigravity.quotaPercent")
             defaults.set(Date(), forKey: "antigravity.lastUpdated")
             defaults.set(quota.tier ?? "Google AI Ultra", forKey: "antigravity.tier")
             defaults.set(quota.account ?? "Active Account", forKey: "antigravity.account")
@@ -148,7 +334,7 @@ class AppState: ObservableObject {
     }
 
     func copyRemoteCommand() {
-        let cmd = quota?.remoteCommand ?? "curl -s http://192.168.5.67:3007"
+        let cmd = quota?.remoteCommand ?? "curl -s http://127.0.0.1:3007"
         let pb = NSPasteboard.general
         pb.clearContents()
         pb.setString(cmd, forType: .string)
@@ -167,6 +353,7 @@ class AppState: ObservableObject {
 
 struct CustomProgressBar: View {
     let fraction: Double
+    var height: CGFloat = 5
 
     var color: Color {
         if fraction < 0.20 { return Color(red: 1.0, green: 0.27, blue: 0.23) } // red
@@ -174,18 +361,41 @@ struct CustomProgressBar: View {
         return Color(red: 0.19, green: 0.82, blue: 0.35) // green
     }
 
+    var gradient: LinearGradient {
+        if fraction < 0.20 {
+            return LinearGradient(
+                colors: [Color(red: 1.0, green: 0.35, blue: 0.28), Color(red: 0.95, green: 0.16, blue: 0.16)],
+                startPoint: .leading,
+                endPoint: .trailing
+            )
+        } else if fraction < 0.50 {
+            return LinearGradient(
+                colors: [Color(red: 1.0, green: 0.88, blue: 0.20), Color(red: 0.98, green: 0.70, blue: 0.05)],
+                startPoint: .leading,
+                endPoint: .trailing
+            )
+        } else {
+            return LinearGradient(
+                colors: [Color(red: 0.25, green: 0.90, blue: 0.50), Color(red: 0.12, green: 0.78, blue: 0.35)],
+                startPoint: .leading,
+                endPoint: .trailing
+            )
+        }
+    }
+
     var body: some View {
         GeometryReader { geo in
             ZStack(alignment: .leading) {
                 Capsule()
-                    .fill(Color.white.opacity(0.12))
+                    .fill(Color.white.opacity(0.08))
                 Capsule()
-                    .fill(color)
+                    .fill(gradient)
                     .frame(width: max(0, min(geo.size.width, geo.size.width * CGFloat(fraction))))
-                    .animation(.spring(response: 0.4, dampingFraction: 0.8), value: fraction)
+                    .shadow(color: color.opacity(0.30), radius: 3, x: 0, y: 1)
+                    .animation(.spring(response: 0.45, dampingFraction: 0.82), value: fraction)
             }
         }
-        .frame(height: 5)
+        .frame(height: height)
     }
 }
 
@@ -200,7 +410,7 @@ struct HeaderView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
             HStack(alignment: .center, spacing: 8) {
-                // Logo box custom 22x22px logo box
+                // 22x22pt brand logo box with subtle glow
                 ZStack {
                     RoundedRectangle(cornerRadius: 6, style: .continuous)
                         .fill(Color(red: 0.04, green: 0.05, blue: 0.07))
@@ -304,24 +514,24 @@ struct HeaderView: View {
 
                     // 4. Refresh
                     Button {
-                        appState.fetchQuota(force: true)
+                        appState.triggerManualRefresh()
                     } label: {
                         Image(systemName: "arrow.clockwise")
                             .font(.system(size: 11, weight: .semibold))
-                            .foregroundStyle(Color.white.opacity(0.65))
-                            .rotationEffect(.degrees(appState.isLoading ? 360 : 0))
-                            .animation(appState.isLoading ? Animation.linear(duration: 0.8).repeatForever(autoreverses: false) : .default, value: appState.isLoading)
+                            .foregroundStyle(Color.white.opacity(appState.isManualRefreshing ? 1.0 : 0.65))
+                            .rotationEffect(.degrees(appState.refreshRotation))
                             .frame(width: 26, height: 26)
                             .background(
                                 RoundedRectangle(cornerRadius: 7, style: .continuous)
-                                    .fill(Color.white.opacity(0.08))
+                                    .fill(Color.white.opacity(appState.isManualRefreshing ? 0.14 : 0.08))
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 7, style: .continuous)
-                                            .strokeBorder(Color.white.opacity(0.09), lineWidth: 1)
+                                            .strokeBorder(Color.white.opacity(appState.isManualRefreshing ? 0.20 : 0.09), lineWidth: 1)
                                     )
                             )
                     }
                     .buttonStyle(.plain)
+                    .disabled(appState.isManualRefreshing)
                     .help("Refresh Quota (⌘R)")
                 }
             }
@@ -341,14 +551,13 @@ struct HeaderView: View {
     }
 }
 
-struct BucketRowView: View {
-    let bucket: QuotaBucket
+struct RateLimitBoxView: View {
+    let windowTitle: String
+    let fraction: Double
+    let resetSeconds: Int?
+    let iconName: String
 
-    var fraction: Double {
-        bucket.remainingFraction ?? 1.0
-    }
-
-    var percentText: String {
+    var pctText: String {
         "\(Int(round(fraction * 100)))%"
     }
 
@@ -358,66 +567,113 @@ struct BucketRowView: View {
         return Color(red: 0.19, green: 0.82, blue: 0.35)
     }
 
+    var badgeText: String {
+        guard let s = resetSeconds, s > 0 else {
+            return fraction >= 0.999 ? "Ready" : "Refreshing..."
+        }
+        return formatRelativeTime(seconds: s)
+    }
+
     var body: some View {
-        VStack(spacing: 4) {
-            HStack {
-                Text(bucket.displayName ?? bucket.label ?? bucket.window ?? "Limit")
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(Color.white.opacity(0.65))
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .center) {
+                HStack(spacing: 5) {
+                    Image(systemName: iconName)
+                        .font(.system(size: 9.5))
+                        .foregroundStyle(Color.white.opacity(0.60))
+                    Text(windowTitle)
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(Color.white.opacity(0.85))
+                }
 
                 Spacer()
 
-                HStack(spacing: 4) {
-                    Text(percentText)
-                        .font(.system(size: 11, weight: .bold, design: .rounded))
-                        .foregroundStyle(color)
+                HStack(spacing: 6) {
+                    // High-Contrast Electric-Blue Pill Badge [resets in 15m]
+                    Text(badgeText)
+                        .font(.system(size: 10, weight: .bold, design: .rounded))
+                        .foregroundStyle(Color(red: 0.0, green: 0.92, blue: 1.0)) // #00EBFF Electric Cyan/Blue
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 2.5)
+                        .background(
+                            Capsule()
+                                .fill(Color(red: 0.0, green: 0.45, blue: 1.0).opacity(0.24))
+                                .overlay(
+                                    Capsule()
+                                        .strokeBorder(Color(red: 0.0, green: 0.88, blue: 1.0).opacity(0.60), lineWidth: 1.0)
+                                )
+                        )
+                        .shadow(color: Color(red: 0.0, green: 0.85, blue: 1.0).opacity(0.30), radius: 3, x: 0, y: 0)
 
-                    if let secs = bucket.resetsInSeconds, secs > 0 {
-                        Text("(\(formatRelativeTime(seconds: secs)))")
-                            .font(.system(size: 10, weight: .regular))
-                            .foregroundStyle(Color.white.opacity(0.40))
-                    }
+                    Text(pctText)
+                        .font(.system(size: 13.5, weight: .heavy, design: .rounded))
+                        .foregroundStyle(color)
                 }
             }
 
-            CustomProgressBar(fraction: fraction)
+            CustomProgressBar(fraction: fraction, height: 4)
         }
+        .padding(10)
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(Color.white.opacity(0.04))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .strokeBorder(Color.white.opacity(0.07), lineWidth: 1)
+                )
+        )
     }
 }
 
-struct GroupCardView: View {
-    let group: QuotaGroup
+struct ModelGroupSection: View {
+    let title: String
+    let subtitle: String
+    let fiveHourFraction: Double
+    let fiveHourReset: Int?
+    let weeklyFraction: Double
+    let weeklyReset: Int?
+    let accentColor: Color
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 8) {
+            // Header
             HStack {
-                Text(group.displayName ?? group.name ?? "Models")
+                Text(title)
                     .font(.system(size: 12, weight: .bold))
                     .foregroundStyle(.white)
+
                 Spacer()
-                if let desc = group.description {
-                    Text(desc.replacingOccurrences(of: "Models within this group: ", with: ""))
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundStyle(Color.white.opacity(0.55))
-                        .lineLimit(1)
-                }
+
+                Text(subtitle)
+                    .font(.system(size: 9.5, weight: .medium))
+                    .foregroundStyle(Color.white.opacity(0.50))
+                    .lineLimit(1)
             }
 
-            if let buckets = group.buckets {
-                VStack(spacing: 8) {
-                    ForEach(buckets) { bucket in
-                        BucketRowView(bucket: bucket)
-                    }
-                }
+            // Dual Rate Limits for this Group
+            VStack(spacing: 6) {
+                RateLimitBoxView(
+                    windowTitle: "5-Hour Rolling Limit",
+                    fraction: fiveHourFraction,
+                    resetSeconds: fiveHourReset,
+                    iconName: "clock.arrow.circlepath"
+                )
+
+                RateLimitBoxView(
+                    windowTitle: "Weekly Plan Quota",
+                    fraction: weeklyFraction,
+                    resetSeconds: weeklyReset,
+                    iconName: "calendar"
+                )
             }
         }
-        .padding(12)
+        .padding(11)
         .background(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color.white.opacity(0.06))
+                .fill(Color.white.opacity(0.05))
                 .overlay(
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .strokeBorder(Color.white.opacity(0.09), lineWidth: 1)
+                        .strokeBorder(Color.white.opacity(0.08), lineWidth: 1)
                 )
         )
     }
@@ -427,7 +683,7 @@ struct RemoteDeviceBar: View {
     @ObservedObject var appState: AppState
 
     var cmd: String {
-        appState.quota?.remoteCommand ?? "curl -s http://192.168.5.67:3007"
+        appState.quota?.remoteCommand ?? "curl -s http://127.0.0.1:3007"
     }
 
     var body: some View {
@@ -538,7 +794,7 @@ struct OfflineCardView: View {
 
             HStack {
                 Button {
-                    appState.fetchQuota(force: true)
+                    appState.triggerManualRefresh()
                 } label: {
                     Text("Retry Connection")
                         .font(.system(size: 10, weight: .semibold))
@@ -571,11 +827,30 @@ struct DashboardView: View {
     @ObservedObject var appState: AppState
 
     var body: some View {
-        VStack(spacing: 11) {
-            if let groups = appState.quota?.groups, !groups.isEmpty {
-                ForEach(groups) { group in
-                    GroupCardView(group: group)
-                }
+        VStack(spacing: 10) {
+            if appState.quota != nil {
+                // 1. Gemini Models Group (Both 5h and Weekly Limits)
+                ModelGroupSection(
+                    title: "Gemini Models",
+                    subtitle: "Gemini Flash · Gemini Pro",
+                    fiveHourFraction: appState.breakdown.gemini5hFraction ?? 1.0,
+                    fiveHourReset: appState.breakdown.gemini5hResetsIn,
+                    weeklyFraction: appState.breakdown.geminiWeeklyFraction ?? 1.0,
+                    weeklyReset: appState.breakdown.geminiWeeklyResetsIn,
+                    accentColor: Color(red: 0.04, green: 0.52, blue: 1.0)
+                )
+                .padding(.horizontal, 14)
+
+                // 2. Claude & GPT Models Group (Both 5h and Weekly Limits)
+                ModelGroupSection(
+                    title: "Claude & GPT Models",
+                    subtitle: "Claude Opus · Sonnet · GPT-OSS",
+                    fiveHourFraction: appState.breakdown.claude5hFraction ?? 1.0,
+                    fiveHourReset: appState.breakdown.claude5hResetsIn,
+                    weeklyFraction: appState.breakdown.claudeWeeklyFraction ?? 1.0,
+                    weeklyReset: appState.breakdown.claudeWeeklyResetsIn,
+                    accentColor: Color(red: 0.75, green: 0.35, blue: 0.95)
+                )
                 .padding(.horizontal, 14)
             } else if appState.isOffline {
                 OfflineCardView(appState: appState)
@@ -645,7 +920,7 @@ struct SetupView: View {
                     .font(.system(size: 9, weight: .bold))
                     .foregroundStyle(Color.white.opacity(0.40))
 
-                SetupRow(label: "Account", value: appState.quota?.account ?? "ohheysean@gmail.com")
+                SetupRow(label: "Account", value: appState.quota?.account ?? "Active Account")
                 SetupRow(label: "Plan Tier", value: appState.quota?.tier ?? "Google AI Ultra")
                 SetupRow(label: "Credential Store", value: appState.quota?.credentialSource ?? "macOS Keychain")
             }
@@ -667,7 +942,7 @@ struct SetupView: View {
 
                 SetupRow(label: "Daemon Status", value: appState.isOffline ? "Offline" : "Running 24/7 (LaunchAgent)")
                 SetupRow(label: "Local Port", value: "\(appState.quota?.port ?? 3007)")
-                SetupRow(label: "Local LAN IP", value: appState.quota?.localIp ?? "192.168.5.67")
+                SetupRow(label: "Local LAN IP", value: appState.quota?.localIp ?? "127.0.0.1")
             }
             .padding(12)
             .background(
@@ -764,34 +1039,15 @@ struct DesktopWidgetView: View {
         return t.lowercased().contains("ultra") ? "Ultra" : t
     }
 
-    var geminiFraction: Double {
-        for grp in appState.quota?.groups ?? [] {
-            if (grp.displayName ?? grp.name ?? "").lowercased().contains("gemini") {
-                for b in grp.buckets ?? [] {
-                    if b.window == "5h" || (b.displayName ?? "").contains("Five Hour") {
-                        return b.remainingFraction ?? 1.0
-                    }
-                }
-            }
-        }
-        return 1.0
-    }
-
-    var claudeFraction: Double {
-        for grp in appState.quota?.groups ?? [] {
-            if !(grp.displayName ?? grp.name ?? "").lowercased().contains("gemini") {
-                for b in grp.buckets ?? [] {
-                    if b.window == "5h" || (b.displayName ?? "").contains("Five Hour") {
-                        return b.remainingFraction ?? 1.0
-                    }
-                }
-            }
-        }
-        return 1.0
-    }
-
     var body: some View {
-        VStack(spacing: 7) {
+        let b = appState.breakdown
+        let g5h = b.gemini5hFraction ?? 1.0
+        let gWk = b.geminiWeeklyFraction ?? 1.0
+        let c5h = b.claude5hFraction ?? 1.0
+        let cWk = b.claudeWeeklyFraction ?? 1.0
+
+        VStack(spacing: 6) {
+            // Header
             HStack(spacing: 5) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 4, style: .continuous)
@@ -843,41 +1099,64 @@ struct DesktopWidgetView: View {
                 .animation(.easeInOut(duration: 0.15), value: isHovering)
             }
 
-            VStack(spacing: 5) {
-                VStack(spacing: 2) {
-                    HStack {
-                        Text("Gemini (5h)")
-                            .font(.system(size: 9, weight: .medium))
-                            .foregroundStyle(Color.white.opacity(0.65))
-                        Spacer()
-                        Text("\(Int(round(geminiFraction * 100)))%")
-                            .font(.system(size: 9, weight: .bold, design: .rounded))
-                            .foregroundStyle(colorFor(fraction: geminiFraction))
-                    }
-                    CustomProgressBar(fraction: geminiFraction)
+            // All 4 Mini Progress Rows
+            VStack(spacing: 3) {
+                // 1. Gemini 5h
+                HStack {
+                    Text("Gemini (5h)")
+                        .font(.system(size: 8.5, weight: .medium))
+                        .foregroundStyle(Color.white.opacity(0.70))
+                    Spacer()
+                    Text("\(Int(round(g5h * 100)))%")
+                        .font(.system(size: 8.5, weight: .bold, design: .rounded))
+                        .foregroundStyle(colorFor(fraction: g5h))
                 }
+                CustomProgressBar(fraction: g5h, height: 3)
 
-                VStack(spacing: 2) {
-                    HStack {
-                        Text("Claude & GPT")
-                            .font(.system(size: 9, weight: .medium))
-                            .foregroundStyle(Color.white.opacity(0.65))
-                        Spacer()
-                        Text("\(Int(round(claudeFraction * 100)))%")
-                            .font(.system(size: 9, weight: .bold, design: .rounded))
-                            .foregroundStyle(colorFor(fraction: claudeFraction))
-                    }
-                    CustomProgressBar(fraction: claudeFraction)
+                // 2. Gemini Wk
+                HStack {
+                    Text("Gemini (Wk)")
+                        .font(.system(size: 8.5, weight: .medium))
+                        .foregroundStyle(Color.white.opacity(0.50))
+                    Spacer()
+                    Text("\(Int(round(gWk * 100)))%")
+                        .font(.system(size: 8.5, weight: .semibold, design: .rounded))
+                        .foregroundStyle(colorFor(fraction: gWk))
                 }
+                CustomProgressBar(fraction: gWk, height: 3)
+
+                // 3. Claude 5h
+                HStack {
+                    Text("Claude (5h)")
+                        .font(.system(size: 8.5, weight: .medium))
+                        .foregroundStyle(Color.white.opacity(0.70))
+                    Spacer()
+                    Text("\(Int(round(c5h * 100)))%")
+                        .font(.system(size: 8.5, weight: .bold, design: .rounded))
+                        .foregroundStyle(colorFor(fraction: c5h))
+                }
+                CustomProgressBar(fraction: c5h, height: 3)
+
+                // 4. Claude Wk
+                HStack {
+                    Text("Claude (Wk)")
+                        .font(.system(size: 8.5, weight: .medium))
+                        .foregroundStyle(Color.white.opacity(0.50))
+                    Spacer()
+                    Text("\(Int(round(cWk * 100)))%")
+                        .font(.system(size: 8.5, weight: .semibold, design: .rounded))
+                        .foregroundStyle(colorFor(fraction: cWk))
+                }
+                CustomProgressBar(fraction: cWk, height: 3)
             }
 
             Text("Independent personal utility · Not affiliated with Google")
-                .font(.system(size: 7.5, weight: .regular))
+                .font(.system(size: 7, weight: .regular))
                 .foregroundStyle(Color.white.opacity(0.35))
                 .lineLimit(1)
         }
-        .padding(10)
-        .frame(width: 240, height: 124)
+        .padding(9)
+        .frame(width: 240, height: 136)
         .background(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .fill(Color(red: 0.08, green: 0.09, blue: 0.12).opacity(0.94))
@@ -931,8 +1210,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSPopoverDel
             self?.snapOutPopover()
         }
         appState.onUpdateStatusTitle = { [weak self] title, tooltip in
-            self?.statusItem?.button?.title = title
-            self?.statusItem?.button?.toolTip = tooltip
+            if self?.statusItem?.button?.title != title {
+                self?.statusItem?.button?.title = title
+            }
+            if self?.statusItem?.button?.toolTip != tooltip {
+                self?.statusItem?.button?.toolTip = tooltip
+            }
         }
 
         let hostingVC = NSHostingController(rootView: MainContainerView(appState: appState))
@@ -943,7 +1226,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSPopoverDel
         popover.appearance = NSAppearance(named: .darkAqua)
         popover.behavior = .transient
         popover.animates = true
-        popover.contentSize = NSSize(width: 360, height: 430)
+        popover.contentSize = NSSize(width: 360, height: 490)
         popover.delegate = self
         popover.contentViewController = hostingVC
 
@@ -957,8 +1240,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSPopoverDel
             object: nil
         )
 
+        // Start 1-second live countdown timer and fetch initial data
+        appState.startCountdownTimer()
         appState.fetchQuota()
-        let timer = Timer(timeInterval: 30.0, repeats: true) { [weak self] _ in
+
+        // 15-second background daemon polling in common RunLoop mode
+        let timer = Timer(timeInterval: 15.0, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 self?.appState.fetchQuota()
             }
@@ -974,7 +1261,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSPopoverDel
     func setupStatusBar() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = statusItem.button {
-            button.title = "✦ --%"
+            button.title = "✦ G: --% · C: --%"
             button.toolTip = "Antigravity Quota (Click to open dashboard)"
             button.target = self
             button.action = #selector(statusBarButtonClicked(_:))
@@ -987,11 +1274,23 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSPopoverDel
         if event?.type == .rightMouseUp {
             showContextMenu()
         } else {
-            if appState.isUnsnapped, let win = detachedWindow, win.isVisible {
-                win.makeKeyAndOrderFront(nil)
-                NSApp.activate(ignoringOtherApps: true)
+            NSApp.activate(ignoringOtherApps: true)
+            if appState.isUnsnapped {
+                if let win = detachedWindow {
+                    if win.isVisible {
+                        win.orderOut(nil)
+                    } else {
+                        win.makeKeyAndOrderFront(nil)
+                    }
+                } else {
+                    detachToWindow()
+                }
             } else {
-                togglePopover(sender)
+                if popover.isShown {
+                    popover.performClose(sender)
+                } else {
+                    snapOutPopover()
+                }
             }
         }
     }
@@ -999,14 +1298,21 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSPopoverDel
     func snapOutPopover() {
         guard let button = statusItem.button else { return }
         if appState.isUnsnapped {
-            detachedWindow?.makeKeyAndOrderFront(nil)
-            NSApp.activate(ignoringOtherApps: true)
+            if let win = detachedWindow {
+                win.makeKeyAndOrderFront(nil)
+                NSApp.activate(ignoringOtherApps: true)
+            } else {
+                detachToWindow()
+            }
             return
         }
 
         if !popover.isShown {
             NSApp.activate(ignoringOtherApps: true)
             popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+            if let popWindow = popover.contentViewController?.view.window {
+                popWindow.makeKey()
+            }
             appState.fetchQuota()
         }
     }
@@ -1058,12 +1364,35 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSPopoverDel
         appState.isUnsnapped = true
 
         let winWidth: CGFloat = 360
-        let winHeight: CGFloat = 430
+        let winHeight: CGFloat = 490
 
-        var origin = NSPoint(x: 250, y: 350)
+        // Multi-monitor coordinate positioning:
+        // Identify the exact screen where the status item button lives.
+        let targetScreen = statusItem.button?.window?.screen ?? NSScreen.main ?? NSScreen.screens.first
+        let screenVisible = targetScreen?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
+
+        var origin: NSPoint
         if let button = statusItem.button, let win = button.window {
-            let buttonRect = win.convertToScreen(button.bounds)
-            origin = NSPoint(x: max(20, buttonRect.origin.x - (winWidth / 2)), y: max(40, buttonRect.origin.y - winHeight - 10))
+            let buttonRectOnScreen = win.convertToScreen(button.bounds)
+            let desiredX = buttonRectOnScreen.midX - (winWidth / 2)
+            let desiredY = buttonRectOnScreen.minY - winHeight - 6
+
+            // Clamp strictly inside targetScreen's visibleFrame so it never lands off-screen
+            // or jumps to another monitor in setups where coordinates are negative
+            let minX = screenVisible.minX + 8
+            let maxX = max(minX, screenVisible.maxX - winWidth - 8)
+            let clampedX = max(minX, min(desiredX, maxX))
+
+            let minY = screenVisible.minY + 8
+            let maxY = max(minY, screenVisible.maxY - winHeight - 8)
+            let clampedY = max(minY, min(desiredY, maxY))
+
+            origin = NSPoint(x: clampedX, y: clampedY)
+        } else {
+            origin = NSPoint(
+                x: max(screenVisible.minX + 8, screenVisible.maxX - winWidth - 20),
+                y: max(screenVisible.minY + 8, screenVisible.maxY - winHeight - 20)
+            )
         }
 
         let panel = NSPanel(
@@ -1141,10 +1470,16 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSPopoverDel
         }
 
         let widgetWidth: CGFloat = 240
-        let widgetHeight: CGFloat = 124
+        let widgetHeight: CGFloat = 136
 
-        let screenFrame = NSScreen.main?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
-        var targetFrame = NSRect(x: screenFrame.maxX - widgetWidth - 30, y: screenFrame.minY + 40, width: widgetWidth, height: widgetHeight)
+        let targetScreen = statusItem.button?.window?.screen ?? NSScreen.main ?? NSScreen.screens.first
+        let screenFrame = targetScreen?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
+        var targetFrame = NSRect(
+            x: max(screenFrame.minX + 16, screenFrame.maxX - widgetWidth - 30),
+            y: screenFrame.minY + 40,
+            width: widgetWidth,
+            height: widgetHeight
+        )
 
         if let saved = UserDefaults.standard.string(forKey: "antigravity.widgetFrame") {
             let restored = NSRectFromString(saved)
@@ -1213,20 +1548,30 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSPopoverDel
 
         menu.addItem(NSMenuItem.separator())
 
-        if let groups = appState.quota?.groups, !groups.isEmpty {
-            for grp in groups {
-                let gName = grp.displayName ?? grp.name ?? "Models"
-                for b in grp.buckets ?? [] {
-                    let bName = b.displayName ?? b.label ?? b.kind ?? "Limit"
-                    let frac = b.remainingFraction ?? 1.0
-                    let pctStr = String(format: "%.0f%%", frac * 100)
-                    let subItem = NSMenuItem(title: "\(gName) (\(bName)): \(pctStr)", action: nil, keyEquivalent: "")
-                    subItem.isEnabled = false
-                    menu.addItem(subItem)
-                }
-            }
-            menu.addItem(NSMenuItem.separator())
-        }
+        // Explicitly list all 4 rate limits in right-click context menu
+        let b = appState.breakdown
+        let g5hPct = Int(round((b.gemini5hFraction ?? 1.0) * 100))
+        let gWkPct = Int(round((b.geminiWeeklyFraction ?? 1.0) * 100))
+        let c5hPct = Int(round((b.claude5hFraction ?? 1.0) * 100))
+        let cWkPct = Int(round((b.claudeWeeklyFraction ?? 1.0) * 100))
+
+        let g5hItem = NSMenuItem(title: "• Gemini (5h Limit): \(g5hPct)% (\(formatRelativeTime(seconds: b.gemini5hResetsIn)))", action: nil, keyEquivalent: "")
+        g5hItem.isEnabled = false
+        menu.addItem(g5hItem)
+
+        let gWkItem = NSMenuItem(title: "• Gemini (Weekly): \(gWkPct)% (\(formatRelativeTime(seconds: b.geminiWeeklyResetsIn)))", action: nil, keyEquivalent: "")
+        gWkItem.isEnabled = false
+        menu.addItem(gWkItem)
+
+        let c5hItem = NSMenuItem(title: "• Claude/GPT (5h Limit): \(c5hPct)% (\(formatRelativeTime(seconds: b.claude5hResetsIn)))", action: nil, keyEquivalent: "")
+        c5hItem.isEnabled = false
+        menu.addItem(c5hItem)
+
+        let cWkItem = NSMenuItem(title: "• Claude/GPT (Weekly): \(cWkPct)% (\(formatRelativeTime(seconds: b.claudeWeeklyResetsIn)))", action: nil, keyEquivalent: "")
+        cWkItem.isEnabled = false
+        menu.addItem(cWkItem)
+
+        menu.addItem(NSMenuItem.separator())
 
         if appState.isUnsnapped {
             let snapItem = NSMenuItem(title: "Snap Back to Menu Bar", action: #selector(snapMenuAction), keyEquivalent: "u")
@@ -1282,7 +1627,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSPopoverDel
     }
 
     @objc func refreshDataFromMenu() {
-        appState.fetchQuota(force: true)
+        appState.triggerManualRefresh()
     }
 
     @objc func copyRemoteCmd() {

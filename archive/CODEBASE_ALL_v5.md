@@ -207,7 +207,7 @@ let package = Package(
 ```swift
 // v10 – 100% Pure Native SwiftUI & AppKit macOS Menu Bar Application
 //       Fixed Refresh Button Animation (Deterministic 360° Ease-in-Out, Zero Infinite Glitches),
-//       Crisp Obsidian Palette, Sibling Parity with Grok Quota Tracker, Dynamic Sizing & Instant Quit.
+//       Crisp Obsidian Palette, Sibling Parity with Native Quota Tracker, Dynamic Sizing & Instant Quit.
 import Cocoa
 import SwiftUI
 import WidgetKit
@@ -421,7 +421,7 @@ struct HeaderView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
             HStack(alignment: .center, spacing: 8) {
-                // Logo box matching Grok's 22x22px logo box
+                // Logo box custom 22x22px logo box
                 ZStack {
                     RoundedRectangle(cornerRadius: 6, style: .continuous)
                         .fill(Color(red: 0.04, green: 0.05, blue: 0.07))

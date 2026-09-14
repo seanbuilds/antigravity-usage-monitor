@@ -53,7 +53,7 @@ The application is built using **pure native Swift, SwiftUI, AppKit, and WidgetK
 - **Ultra-Low Resource Footprint**: Runs at just ~90 MB RAM with zero auxiliary WebKit helper processes.
 - **Deterministic 360° Refresh Animation**: Manual refresh executes a single, fluid 360-degree ease-in-out rotation (`withAnimation(.easeInOut(duration: 0.6))`). Background 30s timer refreshes do not disturb the icon.
 - **Dynamic Content Sizing**: Popover and floating window size dynamically to actual content with zero blank margins or scroll clipping.
-- **Obsidian Visual Identity**: Styled with an obsidian glass background (`rgba(13, 16, 23, 0.97)`), rounded 14px corners, and electric blue borders (`#3B82F6`) achieving complete sibling visual parity with the Grok Usage Monitor.
+- **Obsidian Visual Identity**: Styled with an obsidian glass background (`rgba(13, 16, 23, 0.97)`), rounded 14px corners, and electric blue borders (`#3B82F6`) achieving complete sibling visual parity with the Obsidian Monitor Design.
 
 ### 3. Menu Bar Snap-Out Popover & Sibling Parity
 - **Left-Click**: Instantly snaps out the clean 360px card directly below the menu bar icon.
@@ -208,7 +208,7 @@ let package = Package(
 ```swift
 // v11 – 100% Pure Native SwiftUI & AppKit macOS Menu Bar Application
 //       Dual Menu Bar Indicator (✦ G: 64% · C: 56%), Full 4-Rate-Limit Matrix,
-//       Deterministic 360° Ease-In-Out Refresh, Obsidian Palette, Sibling Parity with Grok.
+//       Deterministic 360° Ease-In-Out Refresh, Obsidian Palette, Sibling pure native macOS aesthetic.
 import Cocoa
 import SwiftUI
 import WidgetKit
@@ -478,7 +478,7 @@ struct HeaderView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
             HStack(alignment: .center, spacing: 8) {
-                // Logo box matching Grok's 22x22px logo box
+                // Logo box custom 22x22px logo box
                 ZStack {
                     RoundedRectangle(cornerRadius: 6, style: .continuous)
                         .fill(Color(red: 0.04, green: 0.05, blue: 0.07))

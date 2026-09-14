@@ -1,5 +1,4 @@
-// AntigravityWidget/AntigravityWidgetBundle.swift
-// v1 – Entry point for native macOS WidgetKit extension
+// Sources/AntigravityWidget/AntigravityWidgetBundle.swift
 import WidgetKit
 import SwiftUI
 

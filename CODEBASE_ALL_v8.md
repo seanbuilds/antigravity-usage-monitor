@@ -738,7 +738,7 @@ flowchart TD
 3. **Strict Versioning & Archival**:
    * Append version suffixes (`_vN`) to all code, build, and documentation files.
    * When any file exceeds `v5`, keep only the two most recent versions in the active directory and archive earlier versions into `./archive/`.
-4. **Vocabulary Guidelines**: Avoid corporate/developer jargon terms (`"dossier"`, `"stack"`, `"seat"`). Use clear, professional alternatives (record/summary, technical foundation/suite of technologies, user license/team member).
+4. **Vocabulary & Communication Standards**: Adhere strictly to plain-language, professional communication. Avoid developer and corporate jargon; always use professional, accessible terminology (such as executive summary, technical foundation/suite of technologies, user license/team member).
 ```
 ---
 

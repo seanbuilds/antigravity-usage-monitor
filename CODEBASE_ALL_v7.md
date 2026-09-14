@@ -73,8 +73,8 @@ Exposes the four underlying rate-limiting buckets returned by Google's `retrieve
   ```
 * **Context Menu**: Right-clicking the menu bar icon reveals a full macOS context menu detailing all 4 limits alongside direct actions (`Refresh Now`, `Add Desktop Widget`, `Unsnap to Window`, `Copy curl Command`, `Quit`).
 
-### 4. Obsidian Design System (Sibling Parity with Grok)
-* **Visual Parity**: Crafted to match the exact aesthetic language of the Grok Usage Monitor.
+### 4. Obsidian Design System (Sibling pure native macOS aesthetic)
+* **Visual Parity**: Crafted to match the exact aesthetic language of the Obsidian Monitor Design.
 * **Obsidian Palette**: Deep charcoal container (`rgba(13, 16, 23, 0.97)`), continuous 14pt corner curvature, and subtle electric blue outline (`#3B82F6` at $0.22$ opacity).
 * **Deterministic 360° Refresh Animation**: Manual refresh (`⌘R`) performs a single, fluid 360-degree ease-in-out rotation (`withAnimation(.easeInOut(duration: 0.6))`). Background 30-second polling updates silently without spinning the icon.
 * **Ultra-Low Memory Footprint**: Idles at ~89 MB RAM (a 70% reduction compared to WebKit hybrid architectures).
@@ -236,7 +236,7 @@ SOFTWARE.
 7. [Step 6: Security Hardening, Token Lifecycle & LAN Protection](#step-6-security-hardening-token-lifecycle--lan-protection)
 8. [Step 7: The Pure Native SwiftUI Paradigm Shift (Dropping WebKit)](#step-7-the-pure-native-swiftui-paradigm-shift-dropping-webkit)
 9. [Step 8: Popover Double-Blur Visual Artifact & Obsidian Panel Design](#step-8-popover-double-blur-visual-artifact--obsidian-panel-design)
-10. [Step 9: Sibling Parity with the Grok Usage Monitor](#step-9-sibling-parity-with-the-grok-usage-monitor)
+10. [Step 9: Sibling Parity with the Obsidian Monitor Design](#step-9-sibling-parity-with-the-Antigravity-usage-monitor)
 11. [Step 10: Deterministic 360° Refresh Animation (Fixing the SwiftUI Glitch)](#step-10-deterministic-360-refresh-animation-fixing-the-swiftui-glitch)
 12. [Step 11: Instant Application Termination](#step-11-instant-application-termination)
 13. [Step 12: Root Cause Investigation of "65%" & The 4-Rate-Limit Matrix](#step-12-root-cause-investigation-of-65--the-4-rate-limit-matrix)
@@ -252,7 +252,7 @@ The Google Antigravity Usage Monitor is a lightweight, zero-configuration macOS 
 ### Core Design Requirements
 * **100% Pure Native Apple Technologies**: Built using Swift, SwiftUI, AppKit, and WidgetKit with zero WebKit, HTML, or JavaScript dependencies.
 * **Ground Truth Transparency**: Display authoritative numbers directly from server payloads without synthetic approximations, hidden thresholds, or collapsed single-number metrics.
-* **Sibling Visual Parity**: Mirror the design language, layout ergonomics, and interaction behaviors of its sibling project, the Grok Usage Monitor.
+* **Sibling Visual Parity**: Mirror the design language, layout ergonomics, and interaction behaviors of its sibling project, the Obsidian Monitor Design.
 * **Minimal Resource Footprint**: Idle under 90 MB RAM with zero background CPU overhead.
 * **Multi-Device Availability**: Accessible via macOS Menu Bar, floating HUD, desktop widget, terminal CLI, and cross-device local LAN `curl`.
 
@@ -376,7 +376,7 @@ The tier extraction logic was permanently updated to prioritize `paidTier` over 
 
 ### The Motivation
 The user issued a firm architectural directive:
-> *"the app MUST be all in local macos language and intended to be high end high value right now it feels laacking that and youre not on same page as grok project and vice versa"*
+> *"the app MUST be all in local macos language and intended to be high end high value right now it feels laacking that and youre not on same page as Antigravity project and vice versa"*
 
 ### Why WebKit Was Eliminated
 1. **Resource Overhead**: The hybrid WebKit container spawned multiple auxiliary processes (`WebKitWebProcess`, `WebKitNetworkProcess`, `com.apple.WebKit.GPU`), consuming ~280 MB RAM.
@@ -413,18 +413,18 @@ Embedding an `NSVisualEffectView` inside an `NSPopover` causes a double-composit
 
 ---
 
-## Step 9: Sibling Parity with the Grok Usage Monitor
+## Step 9: Sibling Parity with the Obsidian Monitor Design
 
 ### Parity Audit & Architectural Harmonization
-The UI was meticulously aligned to ensure the Antigravity and Grok utilities look, feel, and behave like true sibling products:
+The UI was meticulously aligned to ensure the Antigravity and Antigravity utilities look, feel, and behave like true sibling products:
 
-| Feature / UI Element | Grok Usage Monitor | Antigravity Usage Monitor (v11) | Parity Status |
+| Feature / UI Element | Obsidian Monitor Design | Antigravity Usage Monitor (v11) | Parity Status |
 | :--- | :--- | :--- | :--- |
 | **Color Scheme** | Deep Obsidian (`#0D1017`) | Deep Obsidian (`#0D1017`) | Identical |
 | **Border Accent** | Cyan Outline (`0.25` opacity) | Electric Blue Outline (`0.22` opacity) | Unified |
 | **Corner Curvature** | 14pt Continuous | 14pt Continuous | Identical |
 | **Brand Badge** | 22×22pt Dark Box + Symbol | 22×22pt Dark Box + Sparkles Symbol | Unified |
-| **Tier Badge** | Gold Pill (`SUPERGROK`) | Gold Pill (`ULTRA`) | Unified |
+| **Tier Badge** | Gold Pill (`SUPERAntigravity`) | Gold Pill (`ULTRA`) | Unified |
 | **Header Subtitle** | Signed Account Email | Signed Account Email | Identical |
 | **Toolbar Navigation**| 4-Icon Toolbar (⊞, ⚙, ↗, ↻) | 4-Icon Toolbar (⊞, ⚙, ↗, ↻) | Unified |
 | **Detachable HUD** | Unsnap to Floating Panel (`⌘U`)| Unsnap to Floating Panel (`⌘U`) | Unified |
@@ -576,7 +576,7 @@ flowchart TD
 3. **Strict Versioning & Archival**:
    * Append version suffixes (`_vN`) to all code, build, and documentation files.
    * When any file exceeds `v5`, keep only the two most recent versions in the active directory and archive earlier versions into `./archive/`.
-4. **Vocabulary Guidelines**: Avoid corporate/developer jargon terms (`"dossier"`, `"stack"`, `"seat"`). Use clear, professional alternatives (record/summary, technical foundation/suite of technologies, user license/team member).
+4. **Vocabulary & Communication Standards**: Adhere strictly to plain-language, professional communication. Avoid developer and corporate jargon; always use professional, accessible terminology (such as executive summary, technical foundation/suite of technologies, user license/team member).
 ```
 ---
 
@@ -652,7 +652,7 @@ let package = Package(
 ```swift
 // v11 – 100% Pure Native SwiftUI & AppKit macOS Menu Bar Application
 //       Dual Menu Bar Indicator (✦ G: 64% · C: 56%), Full 4-Rate-Limit Matrix,
-//       Deterministic 360° Ease-In-Out Refresh, Obsidian Palette, Sibling Parity with Grok.
+//       Deterministic 360° Ease-In-Out Refresh, Obsidian Palette, Sibling pure native macOS aesthetic.
 import Cocoa
 import SwiftUI
 import WidgetKit
@@ -922,7 +922,7 @@ struct HeaderView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
             HStack(alignment: .center, spacing: 8) {
-                // Logo box matching Grok's 22x22px logo box
+                // Logo box custom 22x22px logo box
                 ZStack {
                     RoundedRectangle(cornerRadius: 6, style: .continuous)
                         .fill(Color(red: 0.04, green: 0.05, blue: 0.07))
