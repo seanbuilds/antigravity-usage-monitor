@@ -62,6 +62,8 @@ public final class MenuBarManager: NSObject, NSPopoverDelegate {
         popover.animates = true
         popover.delegate = self
         popover.contentViewController = hosting
+
+        setupMainMenu()
     }
 
     private func setupTimers() {
@@ -216,4 +218,31 @@ public final class MenuBarManager: NSObject, NSPopoverDelegate {
     @objc private func refreshClicked() { refreshData() }
     @objc private func unsnapClicked() { toggleUnsnap() }
     @objc private func quitClicked() { NSApp.terminate(nil) }
+
+    private func setupMainMenu() {
+        let mainMenu = NSMenu()
+        let appMenuItem = NSMenuItem()
+        mainMenu.addItem(appMenuItem)
+
+        let appMenu = NSMenu()
+        appMenuItem.submenu = appMenu
+
+        appMenu.addItem(withTitle: "About \(brand.displayName)", action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: "")
+        appMenu.addItem(NSMenuItem.separator())
+
+        let unsnapItem = NSMenuItem(title: "Unsnap / Snap Window", action: #selector(unsnapClicked), keyEquivalent: "u")
+        unsnapItem.target = self
+        appMenu.addItem(unsnapItem)
+
+        let reloadItem = NSMenuItem(title: "Refresh Data", action: #selector(refreshClicked), keyEquivalent: "r")
+        reloadItem.target = self
+        appMenu.addItem(reloadItem)
+        appMenu.addItem(NSMenuItem.separator())
+
+        let quitItem = NSMenuItem(title: "Quit \(brand.displayName)", action: #selector(quitClicked), keyEquivalent: "q")
+        quitItem.target = self
+        appMenu.addItem(quitItem)
+
+        NSApp.mainMenu = mainMenu
+    }
 }

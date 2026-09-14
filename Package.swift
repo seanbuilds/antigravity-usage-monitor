@@ -43,6 +43,13 @@ let package = Package(
             name: "GrokWidget",
             dependencies: ["SharedQuotaKit"],
             path: "Sources/GrokWidget"
+        ),
+
+        // ── Test Runner Executable ─────────────────────────────────────────
+        .executableTarget(
+            name: "TestRunner",
+            dependencies: ["SharedQuotaKit"],
+            path: "Tests/TestRunner"
         )
     ]
 )

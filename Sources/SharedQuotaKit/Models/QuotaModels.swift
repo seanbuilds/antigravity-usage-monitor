@@ -136,6 +136,7 @@ public struct UnifiedQuotaSnapshot: Codable, Sendable {
 
 public func formatShortTimer(seconds: Int?) -> String {
     guard let s = seconds, s > 0 else { return "" }
+    if s < 60 { return "\(s)s" }
     let days = s / 86400
     let hours = (s % 86400) / 3600
     let mins = (s % 3600) / 60

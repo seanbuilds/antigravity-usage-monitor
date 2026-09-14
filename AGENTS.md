@@ -33,3 +33,9 @@ Both apps share identical architecture, user ergonomics, window management, and 
    - Executable target `GrokUsageApp`.
    - Widget targets `AntigravityWidget` and `GrokWidget`.
    - Stable production filenames without parallel `_vN` prototype branches in production sources.
+7. **API Delta Computation & Timestamp Invariants**:
+   - When consuming internal, loopback, or third-party APIs returning reset, expiration, or deadline timestamps (ISO-8601), NEVER assume integer duration or delta fields (`resetsInSeconds`, `expires_in`) exist unless verified in the schema.
+   - Always parse the ISO-8601 timestamp directly and compute $\Delta t = \text{targetDate} - \text{now}$ client-side to ensure resilient live countdowns.
+8. **Multi-Monitor Window Anchoring Invariants**:
+   - When positioning `NSPopover` or borderless floating `NSPanel` from an `NSStatusItem`, always obtain the active screen via `statusItem.button?.window?.screen ?? NSScreen.main`.
+   - Always clamp the window rect within `screen.visibleFrame` to prevent off-screen placement when secondary displays use offset or negative coordinate spaces.
