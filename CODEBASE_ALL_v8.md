@@ -127,7 +127,7 @@
 ### 3. Pure Native Apple Technologies (Zero WebKit)
 * **Pure SwiftUI & AppKit**: Zero WebKit, zero HTML, and zero JavaScript runtime overhead.
 * **Ultra-Low Resource Footprint**: Idles at just **~89 MB RAM** (a 70% decrease compared to hybrid wrappers) with 0.0% background CPU usage.
-* **Obsidian Aesthetic**: Styled with a deep obsidian container (`#0D1017`), continuous 14pt corner radius, and subtle electric blue border (`0.22` opacity), matching the sibling Grok Usage Monitor.
+* **Obsidian Aesthetic**: Styled with a deep obsidian container (`#0D1017`), continuous 14pt corner radius, and subtle electric blue border (`0.22` opacity), crafted for high-end dark macOS developer environments.
 * **Deterministic 360° Refresh**: Manual refresh (`⌘R`) performs a fluid 360° ease-in-out rotation. Background 30-second polling updates silently.
 
 ### 4. Detachable Floating HUD & Ambient Desktop Widget
@@ -398,7 +398,7 @@ SOFTWARE.
 7. [Step 6: Security Hardening, Token Lifecycle & LAN Protection](#step-6-security-hardening-token-lifecycle--lan-protection)
 8. [Step 7: The Pure Native SwiftUI Paradigm Shift (Dropping WebKit)](#step-7-the-pure-native-swiftui-paradigm-shift-dropping-webkit)
 9. [Step 8: Popover Double-Blur Visual Artifact & Obsidian Panel Design](#step-8-popover-double-blur-visual-artifact--obsidian-panel-design)
-10. [Step 9: Sibling Parity with the Grok Usage Monitor](#step-9-sibling-parity-with-the-grok-usage-monitor)
+10. [Step 9: Obsidian Design System & macOS UI Ergonomics](#step-9-obsidian-design-system--macos-ui-ergonomics)
 11. [Step 10: Deterministic 360° Refresh Animation (Fixing the SwiftUI Glitch)](#step-10-deterministic-360-refresh-animation-fixing-the-swiftui-glitch)
 12. [Step 11: Instant Application Termination](#step-11-instant-application-termination)
 13. [Step 12: Root Cause Investigation of "65%" & The 4-Rate-Limit Matrix](#step-12-root-cause-investigation-of-65--the-4-rate-limit-matrix)
@@ -414,7 +414,7 @@ The Google Antigravity Usage Monitor is a lightweight, zero-configuration macOS 
 ### Core Design Requirements
 * **100% Pure Native Apple Technologies**: Built using Swift, SwiftUI, AppKit, and WidgetKit with zero WebKit, HTML, or JavaScript dependencies.
 * **Ground Truth Transparency**: Display authoritative numbers directly from server payloads without synthetic approximations, hidden thresholds, or collapsed single-number metrics.
-* **Sibling Visual Parity**: Mirror the design language, layout ergonomics, and interaction behaviors of its sibling project, the Grok Usage Monitor.
+* **Obsidian Design System**: High-contrast, clean HUD aesthetics tailored for modern dark macOS developer environments.
 * **Minimal Resource Footprint**: Idle under 90 MB RAM with zero background CPU overhead.
 * **Multi-Device Availability**: Accessible via macOS Menu Bar, floating HUD, desktop widget, terminal CLI, and cross-device local LAN `curl`.
 
@@ -537,8 +537,8 @@ The tier extraction logic was permanently updated to prioritize `paidTier` over 
 ## Step 7: The Pure Native SwiftUI Paradigm Shift (Dropping WebKit)
 
 ### The Motivation
-The user issued a firm architectural directive:
-> *"the app MUST be all in local macos language and intended to be high end high value right now it feels laacking that and youre not on same page as grok project and vice versa"*
+The architectural directive was clear:
+> *"the app MUST be all in local macos language and intended to be high end high value"*
 
 ### Why WebKit Was Eliminated
 1. **Resource Overhead**: The hybrid WebKit container spawned multiple auxiliary processes (`WebKitWebProcess`, `WebKitNetworkProcess`, `com.apple.WebKit.GPU`), consuming ~280 MB RAM.
@@ -556,7 +556,7 @@ The user issued a firm architectural directive:
 ## Step 8: Popover Double-Blur Visual Artifact & Obsidian Panel Design
 
 ### The Bug
-The user reported: *"when i go to tmenu it looks funky top is blurry and opaque"*.
+During early builds, embedding an `NSVisualEffectView` inside an `NSPopover` caused an opaque milky grey smudge at the top of the menu bar popover card.
 
 ### Root Cause
 Embedding an `NSVisualEffectView` inside an `NSPopover` causes a double-compositing artifact in macOS WindowServer. Because `NSPopover` already draws its own translucent chrome and top arrow, nesting a second blur material creates a milky grey, opaque smudge at the top of the card.
@@ -575,23 +575,23 @@ Embedding an `NSVisualEffectView` inside an `NSPopover` causes a double-composit
 
 ---
 
-## Step 9: Sibling Parity with the Grok Usage Monitor
+## Step 9: Obsidian Design System & macOS UI Ergonomics
 
-### Parity Audit & Architectural Harmonization
-The UI was meticulously aligned to ensure the Antigravity and Grok utilities look, feel, and behave like true sibling products:
+### UI Architecture & Interaction Design
+The user interface was crafted around Apple's macOS Human Interface Guidelines, employing an obsidian HUD aesthetic tailored for developer environments:
 
-| Feature / UI Element | Grok Usage Monitor | Antigravity Usage Monitor (v11) | Parity Status |
-| :--- | :--- | :--- | :--- |
-| **Color Scheme** | Deep Obsidian (`#0D1017`) | Deep Obsidian (`#0D1017`) | Identical |
-| **Border Accent** | Cyan Outline (`0.25` opacity) | Electric Blue Outline (`0.22` opacity) | Unified |
-| **Corner Curvature** | 14pt Continuous | 14pt Continuous | Identical |
-| **Brand Badge** | 22×22pt Dark Box + Symbol | 22×22pt Dark Box + Sparkles Symbol | Unified |
-| **Tier Badge** | Gold Pill (`SUPERGROK`) | Gold Pill (`ULTRA`) | Unified |
-| **Header Subtitle** | Signed Account Email | Signed Account Email | Identical |
-| **Toolbar Navigation**| 4-Icon Toolbar (⊞, ⚙, ↗, ↻) | 4-Icon Toolbar (⊞, ⚙, ↗, ↻) | Unified |
-| **Detachable HUD** | Unsnap to Floating Panel (`⌘U`)| Unsnap to Floating Panel (`⌘U`) | Unified |
-| **Desktop Widget** | 240×124pt Ambient Glass Card | 240×124pt Ambient Glass Card | Unified |
-| **Position Memory** | Persistent Frame in UserDefaults | Persistent Frame in UserDefaults | Unified |
+| UI Component | Implementation Specification | Design Purpose & Behavior |
+| :--- | :--- | :--- |
+| **Color Foundation** | Deep Obsidian (`rgba(13, 16, 23, 0.97)`) | Eliminates window-smudging against dark wallpapers |
+| **Border Accent** | Electric Blue Outline (`0.22` opacity) | Provides crisp visual separation without harsh borders |
+| **Corner Geometry** | 14pt Continuous Curvature | Matches macOS Sonoma/Sequoia native window geometry |
+| **Brand Badge** | 22×22pt Dark Box + Sparkles Icon | Compact, identifiable brand anchor |
+| **Tier Pill** | Gold Pill (`ULTRA`) | Immediate verification of root subscription tier |
+| **Header Subtitle** | Authenticated Account Identity | Displays active session email at a glance |
+| **Toolbar Navigation**| 4-Icon Toolbar (`⊞`, `⚙`, `↗`, `↻`) | Immediate access to Widget, Setup, HUD, and Refresh |
+| **Detachable HUD** | Unsnap to Floating Panel (`⌘U`) | Pinned multi-space reference while coding |
+| **Desktop Widget** | 240×124pt Ambient Glass Card | Wallpaper-level ambient glanceability |
+| **Position Memory** | Persistent Frame in UserDefaults | Remembers exact user coordinates across restarts |
 
 ---
 
@@ -809,12 +809,12 @@ let package = Package(
 
 ## app_main_v11.swift
 **Description:** 100% Pure Native SwiftUI & AppKit Menu Bar Application (Dual Status Indicator & 4-Rate-Limit Matrix)  
-**Path:** `app_main_v11.swift` | **Lines:** 1526
+**Path:** `app_main_v11.swift` | **Lines:** 1563
 
 ```swift
 // v11 – 100% Pure Native SwiftUI & AppKit macOS Menu Bar Application
-//       Dual Menu Bar Indicator (✦ G: 64% · C: 56%), Full 4-Rate-Limit Matrix,
-//       Deterministic 360° Ease-In-Out Refresh, Obsidian Palette, Sibling Parity with Grok.
+//       Dual Menu Bar Indicator with Live Countdown Timers, Full 4-Rate-Limit Matrix,
+//       Deterministic 360° Ease-In-Out Refresh, Obsidian Palette, High-End macOS Design.
 import Cocoa
 import SwiftUI
 import WidgetKit
@@ -877,17 +877,44 @@ public struct QuotaBreakdown: Sendable {
 
 // MARK: - Formatters & Helpers
 
+func parseSecondsRemaining(resetsInSeconds: Int?, resetTime: String?) -> Int? {
+    if let s = resetsInSeconds, s > 0 {
+        return s
+    }
+    guard let timeStr = resetTime, !timeStr.isEmpty else { return nil }
+    let iso = ISO8601DateFormatter()
+    iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+    var targetDate = iso.date(from: timeStr)
+    if targetDate == nil {
+        iso.formatOptions = [.withInternetDateTime]
+        targetDate = iso.date(from: timeStr)
+    }
+    guard let date = targetDate else { return nil }
+    let diff = Int(date.timeIntervalSinceNow)
+    return diff > 0 ? diff : nil
+}
+
 func formatRelativeTime(seconds: Int?) -> String {
     guard let s = seconds, s > 0 else { return "Ready" }
-    if s < 60 { return "\(s)s left" }
+    if s < 60 { return "resets in \(s)s" }
     let days = s / 86400
     let hours = (s % 86400) / 3600
     let mins = (s % 3600) / 60
     var parts: [String] = []
     if days > 0 { parts.append("\(days)d") }
     if hours > 0 || days > 0 { parts.append("\(hours)h") }
-    parts.append("\(mins)m")
-    return parts.prefix(2).joined(separator: " ") + " left"
+    if mins > 0 || parts.isEmpty { parts.append("\(mins)m") }
+    return "resets in " + parts.prefix(2).joined(separator: " ")
+}
+
+func formatShortTimer(seconds: Int?) -> String {
+    guard let s = seconds, s > 0 else { return "" }
+    let days = s / 86400
+    let hours = (s % 86400) / 3600
+    let mins = (s % 3600) / 60
+    if days > 0 { return "\(days)d \(hours)h" }
+    if hours > 0 { return "\(hours)h \(mins)m" }
+    return "\(mins)m"
 }
 
 func extractBreakdown(from quota: QuotaData?) -> QuotaBreakdown {
@@ -901,7 +928,7 @@ func extractBreakdown(from quota: QuotaData?) -> QuotaBreakdown {
         for bucket in grp.buckets ?? [] {
             let bId = (bucket.bucketId ?? bucket.displayName ?? bucket.window ?? "").lowercased()
             let frac = bucket.remainingFraction
-            let secs = bucket.resetsInSeconds
+            let secs = parseSecondsRemaining(resetsInSeconds: bucket.resetsInSeconds, resetTime: bucket.resetTime ?? bucket.resetAt)
             let is5h = bId.contains("5h") || bId.contains("five hour") || bucket.window == "5h"
             let isWeekly = bId.contains("week") || bucket.window == "weekly"
 
@@ -999,8 +1026,18 @@ class AppState: ObservableObject {
         let gWkPct = Int(round((b.geminiWeeklyFraction ?? 1.0) * 100))
         let cWkPct = Int(round((b.claudeWeeklyFraction ?? 1.0) * 100))
 
-        // Option A: Clean dual status indicator in Menu Bar
-        let title = "✦ G: \(g5hPct)% · C: \(c5hPct)%"
+        // Find earliest 5-hour rolling smoothing reset timer
+        var resetSuffix = ""
+        let valid5hTimers = [b.gemini5hResetsIn, b.claude5hResetsIn].compactMap { $0 }.filter { $0 > 0 }
+        if let earliest5h = valid5hTimers.min() {
+            let shortT = formatShortTimer(seconds: earliest5h)
+            if !shortT.isEmpty {
+                resetSuffix = " (\(shortT))"
+            }
+        }
+
+        // Option A: Clean dual status indicator in Menu Bar with live reset timer
+        let title = "✦ G: \(g5hPct)% · C: \(c5hPct)%\(resetSuffix)"
 
         let g5hTime = formatRelativeTime(seconds: b.gemini5hResetsIn)
         let gWkTime = formatRelativeTime(seconds: b.geminiWeeklyResetsIn)
@@ -1107,7 +1144,7 @@ struct HeaderView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
             HStack(alignment: .center, spacing: 8) {
-                // Logo box matching Grok's 22x22px logo box
+                // 22x22pt brand logo box with subtle glow
                 ZStack {
                     RoundedRectangle(cornerRadius: 6, style: .continuous)
                         .fill(Color(red: 0.04, green: 0.05, blue: 0.07))
@@ -2524,7 +2561,7 @@ struct AntigravityUsageWidget: Widget {
 
 ## antigravity_usage_v4.py
 **Description:** Hardened Python CLI & Cross-Device Quota Daemon  
-**Path:** `antigravity_usage_v4.py` | **Lines:** 693
+**Path:** `antigravity_usage_v4.py` | **Lines:** 706
 
 ```python
 #!/usr/bin/env python3
@@ -2826,6 +2863,19 @@ def fetch_usage_data(access_token: str = None, refresh_token: str = None) -> dic
                     access_token
                 )
 
+                raw_groups = quota_resp.get("groups", [])
+                now_utc = datetime.datetime.now(datetime.timezone.utc)
+                for grp in raw_groups:
+                    for b in grp.get("buckets", []):
+                        t_str = b.get("resetTime") or b.get("resetAt")
+                        if t_str:
+                            try:
+                                target = datetime.datetime.fromisoformat(t_str.replace("Z", "+00:00"))
+                                diff = int((target - now_utc).total_seconds())
+                                b["resetsInSeconds"] = max(0, diff)
+                            except Exception:
+                                pass
+
                 local_ip = get_local_ip()
                 return {
                     "account": email or "Active Account",
@@ -2840,7 +2890,7 @@ def fetch_usage_data(access_token: str = None, refresh_token: str = None) -> dic
                     "port": 3007,
                     "remoteCommand": f"curl -s http://{local_ip}:3007",
                     "description": quota_resp.get("description", ""),
-                    "groups": quota_resp.get("groups", [])
+                    "groups": raw_groups
                 }
             except urllib.error.HTTPError as he:
                 if he.code == 401 and refresh_token and attempt == 0:

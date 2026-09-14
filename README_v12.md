@@ -99,7 +99,7 @@
 ### 3. Pure Native Apple Technologies (Zero WebKit)
 * **Pure SwiftUI & AppKit**: Zero WebKit, zero HTML, and zero JavaScript runtime overhead.
 * **Ultra-Low Resource Footprint**: Idles at just **~89 MB RAM** (a 70% decrease compared to hybrid wrappers) with 0.0% background CPU usage.
-* **Obsidian Aesthetic**: Styled with a deep obsidian container (`#0D1017`), continuous 14pt corner radius, and subtle electric blue border (`0.22` opacity), matching the sibling Grok Usage Monitor.
+* **Obsidian Aesthetic**: Styled with a deep obsidian container (`#0D1017`), continuous 14pt corner radius, and subtle electric blue border (`0.22` opacity), crafted for high-end dark macOS developer environments.
 * **Deterministic 360° Refresh**: Manual refresh (`⌘R`) performs a fluid 360° ease-in-out rotation. Background 30-second polling updates silently.
 
 ### 4. Detachable Floating HUD & Ambient Desktop Widget

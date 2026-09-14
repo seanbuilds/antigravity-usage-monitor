@@ -45,8 +45,7 @@ Exposes the four underlying rate-limiting buckets returned by Google's `retrieve
   ```
 * **Context Menu**: Right-clicking the menu bar icon reveals a full macOS context menu detailing all 4 limits alongside direct actions (`Refresh Now`, `Add Desktop Widget`, `Unsnap to Window`, `Copy curl Command`, `Quit`).
 
-### 4. Obsidian Design System (Sibling Parity with Grok)
-* **Visual Parity**: Crafted to match the exact aesthetic language of the Grok Usage Monitor.
+### 4. Obsidian Design System
 * **Obsidian Palette**: Deep charcoal container (`rgba(13, 16, 23, 0.97)`), continuous 14pt corner curvature, and subtle electric blue outline (`#3B82F6` at $0.22$ opacity).
 * **Deterministic 360° Refresh Animation**: Manual refresh (`⌘R`) performs a single, fluid 360-degree ease-in-out rotation (`withAnimation(.easeInOut(duration: 0.6))`). Background 30-second polling updates silently without spinning the icon.
 * **Ultra-Low Memory Footprint**: Idles at ~89 MB RAM (a 70% reduction compared to WebKit hybrid architectures).

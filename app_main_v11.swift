@@ -1,6 +1,6 @@
 // v11 – 100% Pure Native SwiftUI & AppKit macOS Menu Bar Application
-//       Dual Menu Bar Indicator (✦ G: 64% · C: 56%), Full 4-Rate-Limit Matrix,
-//       Deterministic 360° Ease-In-Out Refresh, Obsidian Palette, Sibling Parity with Grok.
+//       Dual Menu Bar Indicator with Live Countdown Timers, Full 4-Rate-Limit Matrix,
+//       Deterministic 360° Ease-In-Out Refresh, Obsidian Palette, High-End macOS Design.
 import Cocoa
 import SwiftUI
 import WidgetKit
@@ -63,17 +63,44 @@ public struct QuotaBreakdown: Sendable {
 
 // MARK: - Formatters & Helpers
 
+func parseSecondsRemaining(resetsInSeconds: Int?, resetTime: String?) -> Int? {
+    if let s = resetsInSeconds, s > 0 {
+        return s
+    }
+    guard let timeStr = resetTime, !timeStr.isEmpty else { return nil }
+    let iso = ISO8601DateFormatter()
+    iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+    var targetDate = iso.date(from: timeStr)
+    if targetDate == nil {
+        iso.formatOptions = [.withInternetDateTime]
+        targetDate = iso.date(from: timeStr)
+    }
+    guard let date = targetDate else { return nil }
+    let diff = Int(date.timeIntervalSinceNow)
+    return diff > 0 ? diff : nil
+}
+
 func formatRelativeTime(seconds: Int?) -> String {
     guard let s = seconds, s > 0 else { return "Ready" }
-    if s < 60 { return "\(s)s left" }
+    if s < 60 { return "resets in \(s)s" }
     let days = s / 86400
     let hours = (s % 86400) / 3600
     let mins = (s % 3600) / 60
     var parts: [String] = []
     if days > 0 { parts.append("\(days)d") }
     if hours > 0 || days > 0 { parts.append("\(hours)h") }
-    parts.append("\(mins)m")
-    return parts.prefix(2).joined(separator: " ") + " left"
+    if mins > 0 || parts.isEmpty { parts.append("\(mins)m") }
+    return "resets in " + parts.prefix(2).joined(separator: " ")
+}
+
+func formatShortTimer(seconds: Int?) -> String {
+    guard let s = seconds, s > 0 else { return "" }
+    let days = s / 86400
+    let hours = (s % 86400) / 3600
+    let mins = (s % 3600) / 60
+    if days > 0 { return "\(days)d \(hours)h" }
+    if hours > 0 { return "\(hours)h \(mins)m" }
+    return "\(mins)m"
 }
 
 func extractBreakdown(from quota: QuotaData?) -> QuotaBreakdown {
@@ -87,7 +114,7 @@ func extractBreakdown(from quota: QuotaData?) -> QuotaBreakdown {
         for bucket in grp.buckets ?? [] {
             let bId = (bucket.bucketId ?? bucket.displayName ?? bucket.window ?? "").lowercased()
             let frac = bucket.remainingFraction
-            let secs = bucket.resetsInSeconds
+            let secs = parseSecondsRemaining(resetsInSeconds: bucket.resetsInSeconds, resetTime: bucket.resetTime ?? bucket.resetAt)
             let is5h = bId.contains("5h") || bId.contains("five hour") || bucket.window == "5h"
             let isWeekly = bId.contains("week") || bucket.window == "weekly"
 
@@ -185,8 +212,18 @@ class AppState: ObservableObject {
         let gWkPct = Int(round((b.geminiWeeklyFraction ?? 1.0) * 100))
         let cWkPct = Int(round((b.claudeWeeklyFraction ?? 1.0) * 100))
 
-        // Option A: Clean dual status indicator in Menu Bar
-        let title = "✦ G: \(g5hPct)% · C: \(c5hPct)%"
+        // Find earliest 5-hour rolling smoothing reset timer
+        var resetSuffix = ""
+        let valid5hTimers = [b.gemini5hResetsIn, b.claude5hResetsIn].compactMap { $0 }.filter { $0 > 0 }
+        if let earliest5h = valid5hTimers.min() {
+            let shortT = formatShortTimer(seconds: earliest5h)
+            if !shortT.isEmpty {
+                resetSuffix = " (\(shortT))"
+            }
+        }
+
+        // Option A: Clean dual status indicator in Menu Bar with live reset timer
+        let title = "✦ G: \(g5hPct)% · C: \(c5hPct)%\(resetSuffix)"
 
         let g5hTime = formatRelativeTime(seconds: b.gemini5hResetsIn)
         let gWkTime = formatRelativeTime(seconds: b.geminiWeeklyResetsIn)
@@ -293,7 +330,7 @@ struct HeaderView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
             HStack(alignment: .center, spacing: 8) {
-                // Logo box matching Grok's 22x22px logo box
+                // 22x22pt brand logo box with subtle glow
                 ZStack {
                     RoundedRectangle(cornerRadius: 6, style: .continuous)
                         .fill(Color(red: 0.04, green: 0.05, blue: 0.07))

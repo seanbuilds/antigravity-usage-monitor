@@ -297,6 +297,19 @@ def fetch_usage_data(access_token: str = None, refresh_token: str = None) -> dic
                     access_token
                 )
 
+                raw_groups = quota_resp.get("groups", [])
+                now_utc = datetime.datetime.now(datetime.timezone.utc)
+                for grp in raw_groups:
+                    for b in grp.get("buckets", []):
+                        t_str = b.get("resetTime") or b.get("resetAt")
+                        if t_str:
+                            try:
+                                target = datetime.datetime.fromisoformat(t_str.replace("Z", "+00:00"))
+                                diff = int((target - now_utc).total_seconds())
+                                b["resetsInSeconds"] = max(0, diff)
+                            except Exception:
+                                pass
+
                 local_ip = get_local_ip()
                 return {
                     "account": email or "Active Account",
@@ -311,7 +324,7 @@ def fetch_usage_data(access_token: str = None, refresh_token: str = None) -> dic
                     "port": 3007,
                     "remoteCommand": f"curl -s http://{local_ip}:3007",
                     "description": quota_resp.get("description", ""),
-                    "groups": quota_resp.get("groups", [])
+                    "groups": raw_groups
                 }
             except urllib.error.HTTPError as he:
                 if he.code == 401 and refresh_token and attempt == 0:
