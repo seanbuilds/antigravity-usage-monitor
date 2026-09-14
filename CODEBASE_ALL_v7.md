@@ -16,6 +16,7 @@
 - [AntigravityWidget/AntigravityWidget.swift](#antigravitywidgetantigravitywidgetswift) — *WidgetKit TimelineProvider & SwiftUI Views*
 - [antigravity_usage_v4.py](#antigravity-usage-v4py) — *Hardened Python CLI & Cross-Device Quota Daemon*
 - [build_app_v11.sh](#build-app-v11sh) — *Pure Native Release Build, Packaging & Signing Script*
+- [package_release_v1.sh](#package-release-v1sh) — *Distribution Packaging Script & Checksum Generator*
 - [com.antigravity.usage_v4.plist](#comantigravityusage-v4plist) — *macOS LaunchAgent Daemon Configuration*
 
 ---
@@ -868,7 +869,7 @@ class AppState: ObservableObject {
     }
 
     func copyRemoteCommand() {
-        let cmd = quota?.remoteCommand ?? "curl -s http://192.168.5.67:3007"
+        let cmd = quota?.remoteCommand ?? "curl -s http://127.0.0.1:3007"
         let pb = NSPasteboard.general
         pb.clearContents()
         pb.setString(cmd, forType: .string)
@@ -1416,7 +1417,7 @@ struct SetupView: View {
                     .font(.system(size: 9, weight: .bold))
                     .foregroundStyle(Color.white.opacity(0.40))
 
-                SetupRow(label: "Account", value: appState.quota?.account ?? "ohheysean@gmail.com")
+                SetupRow(label: "Account", value: appState.quota?.account ?? "Active Account")
                 SetupRow(label: "Plan Tier", value: appState.quota?.tier ?? "Google AI Ultra")
                 SetupRow(label: "Credential Store", value: appState.quota?.credentialSource ?? "macOS Keychain")
             }
@@ -1438,7 +1439,7 @@ struct SetupView: View {
 
                 SetupRow(label: "Daemon Status", value: appState.isOffline ? "Offline" : "Running 24/7 (LaunchAgent)")
                 SetupRow(label: "Local Port", value: "\(appState.quota?.port ?? 3007)")
-                SetupRow(label: "Local LAN IP", value: appState.quota?.localIp ?? "192.168.5.67")
+                SetupRow(label: "Local LAN IP", value: appState.quota?.localIp ?? "127.0.0.1")
             }
             .padding(12)
             .background(
@@ -2240,7 +2241,7 @@ struct AntigravityProvider: TimelineProvider {
             date: Date(),
             quotaPercent: 84,
             tier: "Google AI Ultra",
-            account: "ohheysean@gmail.com",
+            account: "account@example.com",
             lastUpdated: Date()
         )
     }
@@ -3148,6 +3149,49 @@ echo "==> Launching 100% Pure Native Antigravity Usage v11..."
 open "${APP_DIR}"
 
 echo "==> Done! Antigravity Usage v11 is running."
+```
+---
+
+## package_release_v1.sh
+**Description:** Distribution Packaging Script & Checksum Generator  
+**Path:** `package_release_v1.sh` | **Lines:** 35
+
+```bash
+#!/usr/bin/env bash
+# v1 – Package Antigravity Usage Monitor for GitHub Release Distribution
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+APP_DIR="/Applications/Antigravity Usage.app"
+DIST_DIR="${SCRIPT_DIR}/dist"
+VERSION="11.0.0"
+ZIP_NAME="Antigravity-Usage-v${VERSION}-macOS.zip"
+
+echo "==> Ensuring fresh release build of Antigravity Usage v${VERSION}..."
+"${SCRIPT_DIR}/build_app_v11.sh"
+
+echo "==> Preparing distribution directory..."
+mkdir -p "${DIST_DIR}"
+rm -f "${DIST_DIR}/${ZIP_NAME}" "${DIST_DIR}/${ZIP_NAME}.sha256"
+
+echo "==> Creating clean zip archive preserving code signatures & resource forks..."
+ditto -c -k --sequesterRsrc --keepParent "${APP_DIR}" "${DIST_DIR}/${ZIP_NAME}"
+
+echo "==> Generating SHA256 checksum..."
+cd "${DIST_DIR}"
+shasum -a 256 "${ZIP_NAME}" > "${ZIP_NAME}.sha256"
+cd "${SCRIPT_DIR}"
+
+CHECKSUM="$(cat "${DIST_DIR}/${ZIP_NAME}.sha256" | awk '{print $1}')"
+FILE_SIZE="$(du -h "${DIST_DIR}/${ZIP_NAME}" | awk '{print $1}')"
+
+echo "=========================================================="
+echo " Antigravity Usage Monitor v${VERSION} Package Complete"
+echo "=========================================================="
+echo " Release Asset:  ${DIST_DIR}/${ZIP_NAME} (${FILE_SIZE})"
+echo " SHA-256:        ${CHECKSUM}"
+echo " Ready to upload to GitHub Releases or share."
+echo "=========================================================="
 ```
 ---
 

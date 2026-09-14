@@ -17,7 +17,7 @@ struct AntigravityProvider: TimelineProvider {
             date: Date(),
             quotaPercent: 84,
             tier: "Google AI Ultra",
-            account: "ohheysean@gmail.com",
+            account: "account@example.com",
             lastUpdated: Date()
         )
     }

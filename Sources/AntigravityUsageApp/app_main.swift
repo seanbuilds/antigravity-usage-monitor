@@ -217,7 +217,7 @@ class AppState: ObservableObject {
     }
 
     func copyRemoteCommand() {
-        let cmd = quota?.remoteCommand ?? "curl -s http://192.168.5.67:3007"
+        let cmd = quota?.remoteCommand ?? "curl -s http://127.0.0.1:3007"
         let pb = NSPasteboard.general
         pb.clearContents()
         pb.setString(cmd, forType: .string)
@@ -765,7 +765,7 @@ struct SetupView: View {
                     .font(.system(size: 9, weight: .bold))
                     .foregroundStyle(Color.white.opacity(0.40))
 
-                SetupRow(label: "Account", value: appState.quota?.account ?? "ohheysean@gmail.com")
+                SetupRow(label: "Account", value: appState.quota?.account ?? "Active Account")
                 SetupRow(label: "Plan Tier", value: appState.quota?.tier ?? "Google AI Ultra")
                 SetupRow(label: "Credential Store", value: appState.quota?.credentialSource ?? "macOS Keychain")
             }
@@ -787,7 +787,7 @@ struct SetupView: View {
 
                 SetupRow(label: "Daemon Status", value: appState.isOffline ? "Offline" : "Running 24/7 (LaunchAgent)")
                 SetupRow(label: "Local Port", value: "\(appState.quota?.port ?? 3007)")
-                SetupRow(label: "Local LAN IP", value: appState.quota?.localIp ?? "192.168.5.67")
+                SetupRow(label: "Local LAN IP", value: appState.quota?.localIp ?? "127.0.0.1")
             }
             .padding(12)
             .background(
