@@ -25,7 +25,7 @@ mv "${SCRIPT_DIR}/Antigravity Usage" "${APP_DIR}/Contents/MacOS/Antigravity Usag
 chmod +x "${APP_DIR}/Contents/MacOS/Antigravity Usage"
 
 # Copy HTML UI
-cp "${SCRIPT_DIR}/index_v1.html" "${APP_DIR}/Contents/Resources/index.html"
+cp "${SCRIPT_DIR}/index_v2.html" "${APP_DIR}/Contents/Resources/index.html"
 
 # Copy Icon
 if [ -f "/Applications/Antigravity.app/Contents/Resources/icon.icns" ]; then
