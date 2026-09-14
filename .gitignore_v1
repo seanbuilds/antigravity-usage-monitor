@@ -1,0 +1,8 @@
+# v1 – Git ignore rules for antigravity-usage-monitor
+.DS_Store
+__pycache__/
+*.pyc
+daemon.log
+daemon_error.log
+server.log
+server_err.log
