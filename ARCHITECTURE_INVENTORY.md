@@ -1,26 +1,22 @@
 # Architecture Inventory
 
 ## KEEP (Conforms to native architecture)
-- `Package.swift`: Root SPM package configuration (updated to multi-target layout)
-- `antigravity.entitlements`: App Group and Keychain access entitlements
-- `SharedModels/SharedQuota.swift`: Core data model for cross-process snapshot sharing
-- `AntigravityWidget/AntigravityWidget.swift`: Native WidgetKit timeline provider and view
-- `AntigravityWidget/AntigravityWidgetBundle.swift`: Widget bundle entrypoint
+- `Package.swift`: Root SPM package configuration (multi-target layout)
+- `antigravity.entitlements`, `grok.entitlements`: App Group and Keychain access entitlements
+- `Sources/SharedQuotaKit/`: Shared native Swift framework (Domain models, SwiftUI views, HUD panel, MenuBar manager, Keychain, and App Group persistence)
+- `Sources/AntigravityUsageApp/`: Native Antigravity menu bar application target
+- `Sources/GrokUsageApp/`: Native Grok menu bar application target
+- `Sources/AntigravityWidget/`: Native WidgetKit timeline provider and view
+- `Sources/GrokWidget/`: Native Grok WidgetKit timeline provider and view
+- `Tests/TestRunner/`: Native validation test suite
+- `build.sh`: Unified production build and packaging script
 
-## MIGRATE (Reusable logic/assets to convert into shared Swift package)
-- `Sources/AntigravityUsageApp/app_main.swift`: Extract common SwiftUI components (Obsidian header, rate limit cards, progress bars, window snap/unsnap HUD controller, menu bar status manager) into `SharedQuotaKit`.
-- `build_app_v12.sh` / `build_app_v11.sh`: Standardize into clean production build script `build.sh` building both Antigravity and Grok apps.
-- `package_release_v2.sh`: Standardize into `package.sh` creating signed production app bundles.
+## ARCHIVED (Moved to `./archive/`)
+- Prototype Swift files: `app_main_v11.swift`, `app_main_v12.swift` (and earlier versions `v1`-`v10`)
+- Prototype build scripts: `build_app_v11.sh`, `build_app_v12.sh` (and earlier versions `v1`-`v10`)
+- Prototype HTML/CSS assets: `index_v6.html`, `index_v7.html`, `widget_v6.html`, `widget_v7.html`
+- Python daemon reference scripts: `antigravity_usage_v4.py`, `antigravity_usage_v5.py`
 
 ## REFERENCE ONLY (Historical reference for behaviors & API payloads; do not extend)
-- `antigravity_usage_v1.py` through `antigravity_usage_v5.py`: Python daemon reference for Keychain extraction & API endpoints
-- `app_main_v1.swift` through `app_main_v12.swift`: Prototype iterations preserved in root/archive
-- `index_v1.html` through `index_v7.html`: HTML/CSS visual design reference
-- `widget_v1.html` through `widget_v7.html`: Widget layout design reference
-- `DEVELOPMENT_NOTES_v1.md`, `DEVELOPMENT_NOTES_v2.md`: Engineering decision logs
-
-## DELETE CANDIDATE (Redundant temporary artifacts; do not delete without approval)
-- Root prototype Swift files: `app_main_v10.swift`, `app_main_v11.swift`, `app_main_v12.swift` (superseded by Sources/)
-- Root build scripts: `build_app_v10.sh`, `build_app_v11.sh`, `build_app_v12.sh` (superseded by `build.sh`)
-- Old web assets in `Sources/AntigravityUsageApp/Resources/index.html` and `widget.html` (pure native UI eliminates WebKit)
-- Empty logs: `daemon.log`, `daemon_error.log`
+- Files preserved in `./archive/`: Prior Python scripts, HTML prototypes, and build scripts.
+- `DEVELOPMENT_NOTES_v1.md`, `README_v12.md`, `README_v13.md`.

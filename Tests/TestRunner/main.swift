@@ -33,8 +33,19 @@ func testSnapshotModelAndTitle() {
         groups: [grp1, grp2]
     )
 
-    assert(snapshot.menuBarTitle == "✦ G: 51% (4m) · C: 57% (15m)", "Menu bar title failed: \(snapshot.menuBarTitle)")
+    assert(snapshot.menuBarTitle == "✨ G: 51% (4m) · C: 57% (15m)", "Menu bar title failed: \(snapshot.menuBarTitle)")
     print("✓ PASS: testSnapshotModelAndTitle (\(snapshot.menuBarTitle))")
+
+    let grokSnapshot = UnifiedQuotaSnapshot(
+        brand: .grok,
+        account: "grok_user",
+        tier: "SuperGrok",
+        tierId: "supergrok-tier",
+        description: "Grok quota",
+        groups: [grp1]
+    )
+    assert(grokSnapshot.menuBarTitle == "⊘ 51% (4m)", "Grok menu bar title failed: \(grokSnapshot.menuBarTitle)")
+    print("✓ PASS: testGrokSymbolTitle (\(grokSnapshot.menuBarTitle))")
 }
 
 func testAppGroupPersistenceSerialization() {

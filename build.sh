@@ -116,6 +116,17 @@ cat << 'EOF' > "${GROK_APP}/Contents/Info.plist"
     <true/>
     <key>LSUIElement</key>
     <true/>
+    <key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleURLName</key>
+            <string>com.dad.grok.usage.oauth</string>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>grokquota</string>
+            </array>
+        </dict>
+    </array>
     <key>NSAppTransportSecurity</key>
     <dict>
         <key>NSAllowsLocalNetworking</key>

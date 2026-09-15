@@ -50,6 +50,19 @@ public final class MenuBarManager: NSObject, NSPopoverDelegate {
         viewModel.onQuit = {
             NSApp.terminate(nil)
         }
+        viewModel.onLogin = { [weak self] in
+            guard let self = self else { return }
+            Task { @MainActor in
+                if self.brand == .grok {
+                    do {
+                        _ = try await WebAuthManager.shared.startGrokWebAuth()
+                        self.refreshData()
+                    } catch {
+                        // User cancelled or error
+                    }
+                }
+            }
+        }
 
         // Popover
         let hosting = NSHostingController(rootView: SharedDashboardView(viewModel: viewModel))

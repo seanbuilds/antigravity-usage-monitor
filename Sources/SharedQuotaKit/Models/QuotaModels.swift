@@ -15,7 +15,7 @@ public enum BrandIdentity: String, Codable, Sendable {
 
     public var statusSymbol: String {
         switch self {
-        case .antigravity: return "✦"
+        case .antigravity: return "✨"
         case .grok: return "⊘"
         }
     }

@@ -153,6 +153,7 @@ public class DashboardViewModel: ObservableObject {
     public var onToggleUnsnap: (() -> Void)?
     public var onRefresh: (() -> Void)?
     public var onQuit: (() -> Void)?
+    public var onLogin: (() -> Void)?
 
     public init(snapshot: UnifiedQuotaSnapshot? = nil) {
         self.snapshot = snapshot
@@ -163,6 +164,10 @@ public class DashboardViewModel: ObservableObject {
             refreshRotation += 360
         }
         onRefresh?()
+    }
+
+    public func triggerLogin() {
+        onLogin?()
     }
 }
 
@@ -177,7 +182,7 @@ public struct SharedDashboardView: View {
         VStack(spacing: 12) {
             // Header Bar
             HStack(spacing: 7) {
-                Text(viewModel.snapshot?.brand.statusSymbol ?? "✦")
+                Text(viewModel.snapshot?.brand.statusSymbol ?? "✨")
                     .font(.system(size: 13, weight: .bold))
                     .foregroundStyle(viewModel.snapshot?.brand.accentColor ?? .blue)
 
@@ -269,14 +274,47 @@ public struct SharedDashboardView: View {
                         }
                     }
                 } else {
-                    VStack(spacing: 8) {
-                        ProgressView()
-                            .tint(.white)
-                        Text("Connecting to local engine...")
-                            .font(.system(size: 11))
-                            .foregroundStyle(Color.white.opacity(0.60))
+                    VStack(spacing: 12) {
+                        if viewModel.isLoading {
+                            ProgressView()
+                                .tint(.white)
+                            Text("Connecting to service engine...")
+                                .font(.system(size: 11))
+                                .foregroundStyle(Color.white.opacity(0.60))
+                        } else {
+                            Image(systemName: "person.badge.key.fill")
+                                .font(.system(size: 26))
+                                .foregroundStyle(Color.white.opacity(0.70))
+
+                            Text("No Active Session Found")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundStyle(Color.white)
+
+                            Text("Sign in with your account or connect via local CLI to monitor real-time quotas.")
+                                .font(.system(size: 10))
+                                .foregroundStyle(Color.white.opacity(0.60))
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 16)
+
+                            Button {
+                                viewModel.triggerLogin()
+                            } label: {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "lock.open.fill")
+                                        .font(.system(size: 10))
+                                    Text("Sign In with WebAuth")
+                                        .font(.system(size: 11, weight: .semibold))
+                                }
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 7)
+                                .background(Color.blue)
+                                .foregroundStyle(.white)
+                                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                            }
+                            .buttonStyle(.plain)
+                        }
                     }
-                    .frame(height: 160)
+                    .frame(height: 180)
                 }
             }
 
