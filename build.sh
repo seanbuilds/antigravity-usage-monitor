@@ -28,10 +28,12 @@ mkdir -p "${ANTIGRAVITY_APP}/Contents/Resources"
 cp "${BIN_DIR}/AntigravityUsageApp" "${ANTIGRAVITY_APP}/Contents/MacOS/Antigravity Usage"
 chmod +x "${ANTIGRAVITY_APP}/Contents/MacOS/Antigravity Usage"
 
-if [ -f "/Applications/Antigravity.app/Contents/Resources/icon.icns" ]; then
-  cp "/Applications/Antigravity.app/Contents/Resources/icon.icns" "${ANTIGRAVITY_APP}/Contents/Resources/AppIcon.icns"
+if [ -f "${SCRIPT_DIR}/AntigravityAppIcon.icns" ]; then
+  cp "${SCRIPT_DIR}/AntigravityAppIcon.icns" "${ANTIGRAVITY_APP}/Contents/Resources/AppIcon.icns"
 elif [ -f "${SCRIPT_DIR}/AppIcon.icns" ]; then
   cp "${SCRIPT_DIR}/AppIcon.icns" "${ANTIGRAVITY_APP}/Contents/Resources/AppIcon.icns"
+elif [ -f "/Applications/Antigravity.app/Contents/Resources/icon.icns" ]; then
+  cp "/Applications/Antigravity.app/Contents/Resources/icon.icns" "${ANTIGRAVITY_APP}/Contents/Resources/AppIcon.icns"
 fi
 
 cat << 'EOF' > "${ANTIGRAVITY_APP}/Contents/Info.plist"
@@ -46,9 +48,9 @@ cat << 'EOF' > "${ANTIGRAVITY_APP}/Contents/Info.plist"
     <key>CFBundleIdentifier</key>
     <string>com.dad.antigravity.usage</string>
     <key>CFBundleVersion</key>
-    <string>1.0.0</string>
+    <string>12.0.0</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.0.0</string>
+    <string>12.0.0</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleExecutable</key>

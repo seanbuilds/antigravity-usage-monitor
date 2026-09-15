@@ -38,7 +38,11 @@ cp "${BIN_PATH}" "${APP_DIR}/Contents/MacOS/Antigravity Usage"
 chmod +x "${APP_DIR}/Contents/MacOS/Antigravity Usage"
 
 # Copy Icon
-if [ -f "/Applications/Antigravity.app/Contents/Resources/icon.icns" ]; then
+if [ -f "${SCRIPT_DIR}/AntigravityAppIcon.icns" ]; then
+  cp "${SCRIPT_DIR}/AntigravityAppIcon.icns" "${APP_DIR}/Contents/Resources/AppIcon.icns"
+elif [ -f "${SCRIPT_DIR}/AppIcon.icns" ]; then
+  cp "${SCRIPT_DIR}/AppIcon.icns" "${APP_DIR}/Contents/Resources/AppIcon.icns"
+elif [ -f "/Applications/Antigravity.app/Contents/Resources/icon.icns" ]; then
   cp "/Applications/Antigravity.app/Contents/Resources/icon.icns" "${APP_DIR}/Contents/Resources/AppIcon.icns"
 elif [ -f "${HOME}/Applications/Antigravity.app/Contents/Resources/icon.icns" ]; then
   cp "${HOME}/Applications/Antigravity.app/Contents/Resources/icon.icns" "${APP_DIR}/Contents/Resources/AppIcon.icns"
